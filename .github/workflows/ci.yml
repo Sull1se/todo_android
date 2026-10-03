@@ -1,0 +1,88 @@
+# Todo CI
+#
+# 边界（与 docs/development.md、docs/documentation.md 一致）：
+# - 只运行文档检查、工具隔离回归、单元测试、lintDebug 与 Debug 构建；
+#   不运行需要发行私钥/密码的 Release 任务，工作流不携带任何 secrets。
+# - permissions 收敛为 contents: read；外部 PR 在 pull_request 事件下运行，
+#   不使用 pull_request_target 执行外部代码。
+# - Action 固定到官方发布提交 SHA（从各仓库官方 Release 页核对）；
+#   部署时如需升级，重新核对后再固定，不用浮动标签替代核验。
+# - compileSdk 为 36.1：runner 缺少对应 SDK 平台时停止并报告，
+#   不通过降低 compileSdk 让 CI 通过。
+
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: pwsh
+
+jobs:
+  verify:
+    name: 文档检查、工具回归、单测 / lint 与 Debug 构建
+    runs-on: windows-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Ensure Android SDK platform 36.1
+        run: |
+          sdkmanager --install "platforms;android-36.1"
+          if ($LASTEXITCODE -ne 0) {
+            sdkmanager --list | Select-String -Pattern 'platforms;android-36'
+            throw "SDK 平台 36.1 不可用；停止构建，不降低 compileSdk。"
+          }
+
+      - name: Documentation check (working tree)
+        run: pwsh -NoProfile -File scripts/docs/Manage-Docs.ps1 -Mode Check
+
+      - name: Documentation tool regression (Test-Docs)
+        run: pwsh -NoProfile -File scripts/docs/Test-Docs.ps1
+
+      - name: Local gate regression (Test-LocalGate)
+        run: pwsh -NoProfile -File scripts/quality/Test-LocalGate.ps1
+
+      - name: Local full gate (docs + unit tests + lint)
+        run: pwsh -NoProfile -File scripts/quality/Check-Local.ps1 -Mode Full
+
+      - name: Build debug APK
+        run: |
+          .\gradlew.bat :app:assembleDebug --console=plain
+          if ($LASTEXITCODE -ne 0) { throw 'Debug 构建失败' }
+
+      - name: Collect debug APK
+        run: |
+          $version = ([regex]::Match((Get-Content -LiteralPath app/build.gradle.kts -Raw), 'versionName\s*=\s*"([^"]+)"')).Groups[1].Value
+          if ([string]::IsNullOrWhiteSpace($version)) { throw '无法从 app/build.gradle.kts 解析 versionName' }
+          New-Item -ItemType Directory -Force dist | Out-Null
+          $target = "dist/todo-v$version-debug.apk"
+          if (Test-Path -LiteralPath $target) { throw "目标 $target 已存在；不覆盖同名历史产物" }
+          Copy-Item -LiteralPath app/build/outputs/apk/debug/app-debug.apk -Destination $target
+          if (-not (Test-Path -LiteralPath $target)) { throw 'Debug APK 复制失败' }
+          Get-FileHash -Algorithm SHA256 -LiteralPath $target | Format-List
+
+      - name: Upload debug APK artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: todo-debug-apk
+          path: dist/*.apk
+          if-no-files-found: error

@@ -1,0 +1,64 @@
+name: 缺陷报告
+description: 报告 Todo 应用的行为缺陷或崩溃
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢报告问题。请提供尽可能完整的信息；未提供的字段留空即可，维护者不会补造。
+        **注意脱敏**：日志、数据库备份与截图不得包含私人任务内容或凭据。
+  - type: input
+    id: app-version
+    attributes:
+      label: 应用版本
+      description: versionName / versionCode，以及获取渠道（GitHub Releases 下载或自行构建的 Debug）
+      placeholder: "3.0.0 (20)，自行 Debug 构建"
+    validations:
+      required: true
+  - type: input
+    id: android-version
+    attributes:
+      label: Android 版本 / API 级别
+      placeholder: "Android 16 / API 36"
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: 设备类别
+      description: 机型或形态（手机/平板/模拟器及其版本）
+      placeholder: "模拟器 Pixel 8 API 36"
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤
+      description: 从什么状态开始、依次做了什么；清单与任务数量规模如有影响请说明
+      placeholder: |
+        1. 创建两个清单，各 20 项任务
+        2. 在汇总页左滑插旗后立即上下滚动
+        3. …
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 预期结果
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: 实际结果
+      description: 发生频率（总是/偶尔/仅一次）；崩溃时附脱敏后的关键日志
+    validations:
+      required: true
+  - type: textarea
+    id: extra
+    attributes:
+      label: 补充信息
+      description: 录屏、截图（脱敏）或相关说明；没有可留空
+    validations:
+      required: false

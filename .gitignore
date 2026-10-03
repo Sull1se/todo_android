@@ -1,0 +1,29 @@
+# Gradle
+.gradle/
+**/build/
+
+# Local environment (never commit)
+local.properties
+
+# IDE
+/.idea/
+*.iml
+
+# Kotlin
+.kotlin/
+
+# Local build artifacts (deliveries stay out of Git)
+/dist/
+
+# Signing material and secrets (must never be committed)
+/.signing/
+*.jks
+*.keystore
+debug.keystore
+.env
+.env.*
+
+# Tool test workspaces
+scripts/docs/.test-work/
+scripts/quality/.test-work/
+.test-gradle*

@@ -1,0 +1,2 @@
+#!/bin/sh
+exec pwsh -NoProfile -File scripts/quality/Check-Local.ps1 -Mode Commit

@@ -1,0 +1,13 @@
+* text=auto
+
+# Gradle wrapper: POSIX script stays LF, Windows batch keeps CRLF
+gradlew text eol=lf
+gradlew.bat text eol=crlf
+
+# Commit hooks stay LF
+.githooks/* text eol=lf
+
+# Binary assets are never rewritten
+*.png binary
+*.webp binary
+*.jar binary

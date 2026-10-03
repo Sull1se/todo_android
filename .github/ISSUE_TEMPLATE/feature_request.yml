@@ -1,0 +1,44 @@
+name: 功能建议
+description: 提出希望 Todo 增加或改进的能力
+title: "[Feature] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢建议。请先查看 docs/quality.md 的未闭环问题，确认该建议未被记录或仍无相关条目。
+  - type: textarea
+    id: goal
+    attributes:
+      label: 目标
+      description: 想要解决什么问题或达成什么效果
+    validations:
+      required: true
+  - type: textarea
+    id: scenario
+    attributes:
+      label: 使用场景
+      description: 什么情况下会用到它；当前如何绕过
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: 预期行为
+      description: 期望的具体行为、交互或排序结果
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: 验收方式
+      description: 如何验证该功能符合预期（可观察的标准）
+    validations:
+      required: false
+  - type: textarea
+    id: extra
+    attributes:
+      label: 补充信息
+      description: 参考应用、截图或其它说明；没有可留空
+    validations:
+      required: false
