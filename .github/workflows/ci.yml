@@ -46,9 +46,19 @@ jobs:
 
       - name: Ensure Android SDK platform 36.1
         run: |
-          sdkmanager --install "platforms;android-36.1"
+          $sdkmanager = (Get-Command sdkmanager -ErrorAction SilentlyContinue).Source
+          if (-not $sdkmanager) {
+            $candidate = Join-Path $env:ANDROID_HOME 'cmdline-tools/latest/bin/sdkmanager.bat'
+            if (Test-Path -LiteralPath $candidate) { $sdkmanager = $candidate }
+          }
+          if (-not $sdkmanager) { throw "未找到 sdkmanager（ANDROID_HOME=$env:ANDROID_HOME）；停止构建，不降低 compileSdk。" }
+          Write-Host "sdkmanager: $sdkmanager"
+          & $sdkmanager --version
+          @('y') * 100 | & $sdkmanager --licenses > $null
+          if ($LASTEXITCODE -ne 0) { throw "接受 Android SDK 许可证失败；停止构建，不降低 compileSdk。" }
+          & $sdkmanager --install "platforms;android-36.1"
           if ($LASTEXITCODE -ne 0) {
-            sdkmanager --list | Select-String -Pattern 'platforms;android-36'
+            & $sdkmanager --list | Select-String -Pattern 'platforms;android-36'
             throw "SDK 平台 36.1 不可用；停止构建，不降低 compileSdk。"
           }
 
