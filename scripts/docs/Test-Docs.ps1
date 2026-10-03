@@ -31,6 +31,14 @@ function Expect-Check([string]$name, [string[]]$flags, [int]$exitCode, [string]$
     Write-Host "PASS $name"
 }
 
+function Read-FixtureText([string]$path) {
+    # Compare and restore content with CRLF/CR normalized to LF so assertions stay
+    # independent of the checkout line-ending style: fresh Windows clones check out
+    # CRLF while Sync rewrites generated blocks with LF. This mirrors how
+    # Manage-Docs reads documents and does not weaken any comparison.
+    [IO.File]::ReadAllText((Join-Path $fixture $path)).Replace("`r`n", "`n").Replace("`r", "")
+}
+
 try {
     if (-not $fixture.StartsWith($docRoot + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase)) {
         throw 'Fixture must stay inside the project.'
@@ -50,19 +58,19 @@ try {
     Invoke-FixtureGit @('-c', 'init.defaultBranch=main', 'init', '--quiet')
     Invoke-FixtureGit @('config', '--local', 'core.autocrlf', 'false')
     Expect-Check 'baseline' @('-Mode', 'Check') 0
-    $originalIndex = [IO.File]::ReadAllText((Join-Path $fixture 'docs/index.md'))
+    $originalIndex = Read-FixtureText 'docs/index.md'
     $archiveIndexPath = Join-Path $fixture 'docs/archive/index.md'
-    $originalArchiveIndex = if (Test-Path -LiteralPath $archiveIndexPath -PathType Leaf) { [IO.File]::ReadAllText($archiveIndexPath) } else { $null }
-    $originalDev = [IO.File]::ReadAllText((Join-Path $fixture 'docs/development.md'))
-    $originalTodo = [IO.File]::ReadAllText((Join-Path $fixture 'docs/todo.md'))
-    $originalEntry = [IO.File]::ReadAllText((Join-Path $fixture 'AGENTS.md'))
-    $originalApp = [IO.File]::ReadAllText((Join-Path $fixture 'app/build.gradle.kts'))
+    $originalArchiveIndex = if (Test-Path -LiteralPath $archiveIndexPath -PathType Leaf) { Read-FixtureText 'docs/archive/index.md' } else { $null }
+    $originalDev = Read-FixtureText 'docs/development.md'
+    $originalTodo = Read-FixtureText 'docs/todo.md'
+    $originalEntry = Read-FixtureText 'AGENTS.md'
+    $originalApp = Read-FixtureText 'app/build.gradle.kts'
     if ($originalIndex -match '\]\([^)]*\.agents/skills/') { throw 'Document index must not link to Skills.' }
     Expect-Check 'sync idempotence' @('-Mode', 'Sync') 0
-    $archiveUnchanged = $null -eq $originalArchiveIndex -or $originalArchiveIndex -ceq [IO.File]::ReadAllText($archiveIndexPath)
-    if ($originalIndex -cne [IO.File]::ReadAllText((Join-Path $fixture 'docs/index.md')) -or
+    $archiveUnchanged = $null -eq $originalArchiveIndex -or $originalArchiveIndex -ceq (Read-FixtureText 'docs/archive/index.md')
+    if ($originalIndex -cne (Read-FixtureText 'docs/index.md') -or
         -not $archiveUnchanged -or
-        $originalDev -cne [IO.File]::ReadAllText((Join-Path $fixture 'docs/development.md'))) { throw 'Sync changed up-to-date generated files.' }
+        $originalDev -cne (Read-FixtureText 'docs/development.md')) { throw 'Sync changed up-to-date generated files.' }
 
     $newDoc = "---`ntitle: 测试页面`npurpose: 验证自动登记`nstatus: 草案`nowner: 测试 Agent`nscope: 隔离仓库`nupdated: 2026-09-11`nverification: 未验证`nverified: 测试样本`n---`n`n# 测试页面`n"
     Write-Fixture 'docs/测试 页面.md' $newDoc
@@ -109,7 +117,7 @@ try {
     Expect-Check 'restore configuration' @('-Mode', 'Sync') 0
 
     $skillPath = '.agents/skills/write-execution-plan/SKILL.md'
-    $originalSkill = [IO.File]::ReadAllText((Join-Path $fixture $skillPath))
+    $originalSkill = Read-FixtureText $skillPath
     Write-Fixture $skillPath ([regex]::Replace($originalSkill, '(?m)^name:.*$', 'name: wrong-folder'))
     Expect-Check 'skill name must match directory' @('-Mode', 'Check') 1 'DOC-META'
     Write-Fixture $skillPath ([regex]::Replace($originalSkill, '(?m)^description:.*\r?\n', ''))
@@ -135,7 +143,7 @@ try {
     # documentation nav reaches it. Sync fills generated blocks but never creates the
     # index file, so the skeleton mirrors the documented maintainer workflow.
     $archiveSkeleton = "---`ntitle: 测试归档文档索引`npurpose: 验证归档索引生命周期`nstatus: 当前有效`nowner: 测试 Agent`nscope: 隔离仓库归档索引`nupdated: 2026-09-11`nverification: 未验证`nverified: 测试样本`n---`n`n# 测试归档文档索引`n`n<!-- docs:archive:start -->`n| 归档文档 | 用途 | 生命周期 | 验证状态 |`n| --- | --- | --- | --- |`n<!-- docs:archive:end -->`n"
-    $originalDocumentation = [IO.File]::ReadAllText((Join-Path $fixture 'docs/documentation.md'))
+    $originalDocumentation = Read-FixtureText 'docs/documentation.md'
     $navWithArchive = $originalDocumentation.Replace(
         '[文档总索引](index.md) · [当前问题与解决进度](quality.md) · [Agent 工作入口](../AGENTS.md)',
         '[文档总索引](index.md) · [当前问题与解决进度](quality.md) · [归档文档索引](archive/index.md) · [Agent 工作入口](../AGENTS.md)')
@@ -150,13 +158,13 @@ try {
     Write-Fixture 'docs/documentation.md' $navWithArchive
     Expect-Check 'sync fills archive index' @('-Mode', 'Sync') 0
     Expect-Check 'archive index reachable with three generated blocks' @('-Mode', 'Check') 0 'PASS:.*generatedBlocks=3'
-    if (([IO.File]::ReadAllText((Join-Path $fixture 'docs/archive/index.md')) -notmatch 'case-a\.md') -or
-        ($originalIndex -ceq [IO.File]::ReadAllText((Join-Path $fixture 'docs/index.md')))) { throw 'Sync did not register the archive document and index.' }
+    if ((Read-FixtureText 'docs/archive/index.md') -notmatch 'case-a\.md' -or
+        ($originalIndex -ceq (Read-FixtureText 'docs/index.md'))) { throw 'Sync did not register the archive document and index.' }
     Remove-Item -LiteralPath (Join-Path $fixture 'docs/archive') -Recurse -Force
     Write-Fixture 'docs/documentation.md' $originalDocumentation
     Expect-Check 'archive removal resyncs index' @('-Mode', 'Sync') 0
     Expect-Check 'archive state returns to two generated blocks' @('-Mode', 'Check') 0 'PASS:.*generatedBlocks=2'
-    if ($originalIndex -cne [IO.File]::ReadAllText((Join-Path $fixture 'docs/index.md'))) { throw 'Archive regression left a stale document index.' }
+    if ($originalIndex -cne (Read-FixtureText 'docs/index.md')) { throw 'Archive regression left a stale document index.' }
 
     Invoke-FixtureGit @('add', '--all')
     Expect-Check 'valid staged snapshot' @('-Mode', 'Check', '-Staged') 0
