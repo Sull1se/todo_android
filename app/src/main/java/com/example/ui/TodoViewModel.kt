@@ -5,7 +5,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.data.AppMetadata
+import com.example.data.ExternalTaskChanges
 import com.example.data.Task
+import com.example.data.TaskContentMode
 import com.example.data.TaskList
 import com.example.data.TaskOrderEngine
 import com.example.data.TodoRepository
@@ -158,7 +160,14 @@ class TodoViewModel(
             }
         }
 
-        // 3. 监听当前选定视图任务
+        // 3. 桌面小卡片改动的任务，其旧撤销记录失效
+        viewModelScope.launch {
+            ExternalTaskChanges.taskIds.collect { taskId ->
+                undoController.invalidateTask(taskId)
+            }
+        }
+
+        // 4. 监听当前选定视图任务
         viewModelScope.launch {
             selectedListId.flatMapLatest { listId ->
                 val sourceFlow = if (listId == -1) {
@@ -227,13 +236,24 @@ class TodoViewModel(
         }
     }
 
-    fun addList(name: String, themeColor: Long, showInSummary: Boolean = true) {
+    fun addList(
+        name: String,
+        themeColor: Long,
+        showInSummary: Boolean = true,
+        contentMode: Int = TaskContentMode.TITLE_AND_DETAIL
+    ) {
         launchCoordinatedWrite {
-            repository.insertList(name, themeColor, showInSummary)
+            repository.insertList(name, themeColor, showInSummary, contentMode)
         }
     }
 
-    fun updateListInfo(listId: Int, newName: String, newThemeColor: Long, newCompletionMode: Int) {
+    fun updateListInfo(
+        listId: Int,
+        newName: String,
+        newThemeColor: Long,
+        newCompletionMode: Int,
+        newContentMode: Int? = null
+    ) {
         launchCoordinatedWrite {
             val list = _allLists.value?.find { it.id == listId }
             if (list != null) {
@@ -242,7 +262,8 @@ class TodoViewModel(
                     list.copy(
                         name = newName,
                         themeColor = newThemeColor,
-                        completionMode = newCompletionMode
+                        completionMode = newCompletionMode,
+                        contentMode = newContentMode ?: list.contentMode
                     )
                 )
             }
@@ -266,9 +287,16 @@ class TodoViewModel(
         }
     }
 
-    fun addTask(listId: Int, title: String, content: String, isFlagged: Boolean = false) {
+    fun addTask(
+        listId: Int,
+        title: String,
+        content: String,
+        isFlagged: Boolean = false,
+        onCreated: ((Long) -> Unit)? = null
+    ) {
         launchCoordinatedWrite {
-            repository.insertTask(listId, title, content, isFlagged)
+            val newTaskId = repository.insertTask(listId, title, content, isFlagged)
+            onCreated?.invoke(newTaskId)
         }
     }
 

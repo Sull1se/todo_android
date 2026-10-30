@@ -74,6 +74,13 @@ data class PendingUndoIntent(
     val oldRenderGeneration: Long
 )
 
+data class PendingCreateIntent(
+    val actionId: Long,
+    val pageEpoch: Long,
+    val pageId: Int,
+    val taskId: Int
+)
+
 enum class CoordinatorState {
     Idle,
     AwaitResultAndPageAndCard,
@@ -123,6 +130,11 @@ class SwipeViewportCoordinator(
     private var activeJob: Job? = null
     private var timeoutJob: Job? = null
 
+    private var pendingCreateIntent: PendingCreateIntent? = null
+    private var createJob: Job? = null
+    val isAwaitingCreatedTaskTop: Boolean
+        get() = pendingCreateIntent != null
+
     fun onPageSelected(pageId: Int) {
         currentPageEpoch++
         cancelActiveOperation(resetFrame = false)
@@ -167,6 +179,7 @@ class SwipeViewportCoordinator(
     }
 
     private fun retireActiveOperation(publishFrame: Boolean = true) {
+        cancelPendingCreate()
         if (coordinatorState == CoordinatorState.Idle && pendingIntent == null && pendingUndoIntent == null) {
             return
         }
@@ -275,6 +288,81 @@ class SwipeViewportCoordinator(
         if (intent?.taskId == taskId) {
             finishAction(intent.actionId, intent.pageEpoch, publishFrame = true)
         }
+    }
+
+    /**
+     * 插旗新建落库后回顶：等新任务成为当前页 M 首项且布局已按该帧测量，再平滑回到顶部。
+     * 新建项不在当前页面范围、换页、用户手势或其他视口操作开始时放弃，不强行滚动。
+     */
+    fun onFlaggedTaskCreated(taskId: Int, listId: Int, currentPageId: Int) {
+        if (currentPageId != activePageId) return
+        val isBelongToCurrentPage = if (currentPageId == -1) {
+            latestLists.find { it.id == listId }?.showInSummary == true
+        } else {
+            listId == currentPageId
+        }
+        if (!isBelongToCurrentPage) return
+
+        cancelPendingCreate()
+        val intent = PendingCreateIntent(
+            actionId = ++currentActionId,
+            pageEpoch = currentPageEpoch,
+            pageId = currentPageId,
+            taskId = taskId
+        )
+        pendingCreateIntent = intent
+
+        createJob = scope.launch {
+            try {
+                // 1. 等待新任务成为当前帧 M 首项，且列表已按该帧完成测量
+                val layoutReady = withTimeoutOrNull(2500L) {
+                    snapshotFlow {
+                        val frame = currentFrame
+                        frame != null &&
+                            frame.pageId == intent.pageId &&
+                            frame.displayTasks.firstOrNull()?.id == intent.taskId &&
+                            isLayoutAlignedWith(frame)
+                    }.first { it }
+                } ?: false
+
+                if (!layoutReady || !isCreateIntentActive(intent)) return@launch
+
+                // 2. 首可见 key 锚定使新首项位于视口上方，平滑回顶使其可见
+                if (listState.firstVisibleItemIndex != 0 || listState.firstVisibleItemScrollOffset != 0) {
+                    listState.animateScrollToItem(index = 0, scrollOffset = 0)
+                }
+            } catch (_: CancellationException) {
+                // 用户手势、换页或其他视口操作打断
+            } finally {
+                if (pendingCreateIntent?.actionId == intent.actionId) {
+                    pendingCreateIntent = null
+                    createJob = null
+                }
+            }
+        }
+    }
+
+    private fun isCreateIntentActive(intent: PendingCreateIntent): Boolean {
+        return pendingCreateIntent?.actionId == intent.actionId &&
+            currentPageEpoch == intent.pageEpoch &&
+            activePageId == intent.pageId
+    }
+
+    private fun isLayoutAlignedWith(frame: PageFrame): Boolean {
+        val visible = listState.layoutInfo.visibleItemsInfo
+        if (visible.isEmpty()) return false
+        val mItems = visible.filter { item ->
+            val key = item.key as? Int
+            key != null && frame.idToMIndex.containsKey(key)
+        }
+        if (mItems.isEmpty()) return false
+        return mItems.all { item -> frame.idToMIndex[item.key as Int] == item.index }
+    }
+
+    private fun cancelPendingCreate() {
+        pendingCreateIntent = null
+        createJob?.cancel()
+        createJob = null
     }
 
     fun onUndoFlag(
@@ -698,6 +786,7 @@ class SwipeViewportCoordinator(
     }
 
     private fun cancelActiveOperation(resetFrame: Boolean) {
+        cancelPendingCreate()
         activeJob?.cancel()
         activeJob = null
         timeoutJob?.cancel()

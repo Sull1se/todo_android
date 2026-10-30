@@ -116,7 +116,9 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import com.example.data.TaskContentMode
 import com.example.data.TaskList
+import com.example.data.TaskText
 import com.example.data.TaskOrderEngine
 import com.example.ui.components.UndoMessageHost
 import androidx.compose.animation.core.animateDpAsState
@@ -186,6 +188,10 @@ fun HomeScreen(
 
     val listColorMap = remember(lists) {
         lists?.associate { it.id to it.themeColor } ?: emptyMap()
+    }
+
+    val mergedListIds = remember(lists) {
+        lists?.filter { it.contentMode == TaskContentMode.MERGED }?.map { it.id }?.toSet() ?: emptySet()
     }
 
     val activeFrame = coordinator.currentFrame?.takeIf { it.pageId == selectedListId }
@@ -616,6 +622,7 @@ fun HomeScreen(
                     reorderableListState = reorderableListState,
                     selectedTaskIds = selectedTaskIds,
                     listColorMap = listColorMap,
+                    mergedListIds = mergedListIds,
                     isSelectionMode = isSelectionMode,
                     canDrag = canDrag,
                     showCompleted = showCompleted,
@@ -727,8 +734,8 @@ fun HomeScreen(
             AddListDialog(
                 lists = lists,
                 onDismiss = { showAddListDialog = false },
-                onConfirm = { name, color ->
-                    viewModel.addList(name, color)
+                onConfirm = { name, color, contentMode ->
+                    viewModel.addList(name, color, contentMode = contentMode)
                     showAddListDialog = false
                 }
             )
@@ -754,7 +761,12 @@ fun HomeScreen(
                 onCreateListClick = { showAddListDialog = true },
                 onDismiss = { showQuickAddTaskDialog = false },
                 onConfirm = { listId, title, content, isFlagged ->
-                    viewModel.addTask(listId, title, content, isFlagged)
+                    val pageIdAtConfirm = selectedListId
+                    viewModel.addTask(listId, title, content, isFlagged) { newTaskId ->
+                        if (isFlagged) {
+                            coordinator.onFlaggedTaskCreated(newTaskId.toInt(), listId, pageIdAtConfirm)
+                        }
+                    }
                     showQuickAddTaskDialog = false
                 }
             )
@@ -777,9 +789,10 @@ fun HomeScreen(
                         currentName = list.name,
                         currentColor = list.themeColor,
                         currentCompletionMode = list.completionMode,
+                        currentContentMode = list.contentMode,
                         onDismiss = { listSettingsDialogId = null },
-                        onConfirmRename = { newName, newColor, newCompletionMode ->
-                            viewModel.updateListInfo(list.id, newName, newColor, newCompletionMode)
+                        onConfirmRename = { newName, newColor, newCompletionMode, newContentMode ->
+                            viewModel.updateListInfo(list.id, newName, newColor, newCompletionMode, newContentMode)
                             listSettingsDialogId = null
                         },
                         onDelete = {
@@ -956,7 +969,7 @@ fun AppSettingsDialog(
 fun AddListDialog(
     lists: List<TaskList>?,
     onDismiss: () -> Unit,
-    onConfirm: (name: String, color: Long) -> Unit
+    onConfirm: (name: String, color: Long, contentMode: Int) -> Unit
 ) {
     var text by rememberSaveable { mutableStateOf("") }
     val focusRequester = remember { FocusRequester() }
@@ -970,6 +983,7 @@ fun AddListDialog(
     val usedColors = lists?.map { it.themeColor } ?: emptyList()
     val defaultColor = themeColors.firstOrNull { !usedColors.contains(it) } ?: themeColors[0]
     var selectedColor by remember { mutableStateOf(defaultColor) }
+    var selectedContentMode by rememberSaveable { mutableStateOf(TaskContentMode.TITLE_AND_DETAIL) }
 
     LaunchedEffect(isTextFieldReady) {
         if (isTextFieldReady) {
@@ -1022,11 +1036,13 @@ fun AddListDialog(
                         }
                     }
                 }
+                Spacer(modifier = Modifier.height(16.dp))
+                ContentModeSelector(selected = selectedContentMode, onSelect = { selectedContentMode = it })
             }
         },
         confirmButton = {
             Button(
-                onClick = { if (text.isNotBlank()) onConfirm(text, selectedColor) },
+                onClick = { if (text.isNotBlank()) onConfirm(text, selectedColor, selectedContentMode) },
                 enabled = text.isNotBlank(),
                 shape = RoundedCornerShape(50)
             ) {
@@ -1146,7 +1162,24 @@ private fun QuickAddTaskFormDialog(
     var selectedListId by rememberSaveable { mutableStateOf(initialListId) }
     var title by rememberSaveable { mutableStateOf("") }
     var content by rememberSaveable { mutableStateOf("") }
+    // 合并格式清单的“信息”；切换到不同格式的清单时与标题、详细信息互相换算
+    var info by rememberSaveable { mutableStateOf("") }
     var isFlagged by rememberSaveable { mutableStateOf(false) }
+    fun isMergedList(listId: Int?) = lists.find { it.id == listId }?.contentMode == TaskContentMode.MERGED
+    val isMerged = isMergedList(selectedListId)
+    val canSave = selectedListId != null && (if (isMerged) info.isNotBlank() else title.isNotBlank())
+    fun selectList(listId: Int) {
+        val wasMerged = isMergedList(selectedListId)
+        val nowMerged = isMergedList(listId)
+        if (!wasMerged && nowMerged) {
+            info = TaskText.merge(title, content)
+        } else if (wasMerged && !nowMerged) {
+            val (splitTitle, splitContent) = TaskText.split(info)
+            title = splitTitle
+            content = splitContent
+        }
+        selectedListId = listId
+    }
     val focusRequester = remember { FocusRequester() }
     val keyboardController = LocalSoftwareKeyboardController.current
     var isTextFieldReady by remember { mutableStateOf(false) }
@@ -1178,27 +1211,39 @@ private fun QuickAddTaskFormDialog(
         },
         text = {
             Column {
-                androidx.compose.material3.OutlinedTextField(
-                    value = title,
-                    onValueChange = { title = it },
-                    label = { Text("标题") },
-                    singleLine = true,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .focusRequester(focusRequester)
-                        .onGloballyPositioned {
-                            if (!isTextFieldReady) {
-                                isTextFieldReady = true
-                            }
+                val focusModifier = Modifier
+                    .fillMaxWidth()
+                    .focusRequester(focusRequester)
+                    .onGloballyPositioned {
+                        if (!isTextFieldReady) {
+                            isTextFieldReady = true
                         }
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                androidx.compose.material3.OutlinedTextField(
-                    value = content,
-                    onValueChange = { content = it },
-                    label = { Text("详细信息") },
-                    modifier = Modifier.fillMaxWidth()
-                )
+                    }
+                if (isMerged) {
+                    androidx.compose.material3.OutlinedTextField(
+                        value = info,
+                        onValueChange = { info = it },
+                        label = { Text("信息") },
+                        minLines = 3,
+                        maxLines = 8,
+                        modifier = focusModifier
+                    )
+                } else {
+                    androidx.compose.material3.OutlinedTextField(
+                        value = title,
+                        onValueChange = { title = it },
+                        label = { Text("标题") },
+                        singleLine = true,
+                        modifier = focusModifier
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    androidx.compose.material3.OutlinedTextField(
+                        value = content,
+                        onValueChange = { content = it },
+                        label = { Text("详细信息") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
                 Spacer(modifier = Modifier.height(12.dp))
 
                 Text("选择归属清单", style = MaterialTheme.typography.labelLarge)
@@ -1249,7 +1294,7 @@ private fun QuickAddTaskFormDialog(
                                     }
                                 },
                                 onClick = {
-                                    selectedListId = list.id
+                                    selectList(list.id)
                                     expanded = false
                                 }
                             )
@@ -1262,11 +1307,16 @@ private fun QuickAddTaskFormDialog(
             Button(
                 onClick = {
                     val listId = selectedListId
-                    if (title.isNotBlank() && listId != null) {
-                        onConfirm(listId, title, content, isFlagged)
+                    if (canSave && listId != null) {
+                        if (isMerged) {
+                            val (splitTitle, splitContent) = TaskText.split(info)
+                            onConfirm(listId, splitTitle, splitContent, isFlagged)
+                        } else {
+                            onConfirm(listId, title, content, isFlagged)
+                        }
                     }
                 },
-                enabled = title.isNotBlank() && selectedListId != null,
+                enabled = canSave,
                 shape = RoundedCornerShape(50)
             ) {
                 Text("保存")
@@ -1285,8 +1335,9 @@ fun ListSettingsDialog(
     currentName: String,
     currentColor: Long,
     currentCompletionMode: Int,
+    currentContentMode: Int,
     onDismiss: () -> Unit,
-    onConfirmRename: (String, Long, Int) -> Unit,
+    onConfirmRename: (name: String, color: Long, completionMode: Int, contentMode: Int) -> Unit,
     onDelete: () -> Unit
 ) {
     var text by rememberSaveable { mutableStateOf(currentName) }
@@ -1295,6 +1346,7 @@ fun ListSettingsDialog(
     )
     var selectedColor by remember { mutableStateOf(currentColor) }
     var selectedCompletionMode by rememberSaveable { mutableStateOf(currentCompletionMode) }
+    var selectedContentMode by rememberSaveable { mutableStateOf(currentContentMode) }
 
     androidx.compose.material3.AlertDialog(
         onDismissRequest = onDismiss,
@@ -1349,11 +1401,13 @@ fun ListSettingsDialog(
                     )
                     Text("收至底部", modifier = Modifier.clickable { selectedCompletionMode = 1 })
                 }
+                Spacer(modifier = Modifier.height(16.dp))
+                ContentModeSelector(selected = selectedContentMode, onSelect = { selectedContentMode = it })
             }
         },
         confirmButton = {
             Button(
-                onClick = { if (text.isNotBlank()) onConfirmRename(text, selectedColor, selectedCompletionMode) },
+                onClick = { if (text.isNotBlank()) onConfirmRename(text, selectedColor, selectedCompletionMode, selectedContentMode) },
                 enabled = text.isNotBlank(),
                 shape = RoundedCornerShape(50)
             ) {
@@ -1549,6 +1603,7 @@ private fun TaskListContent(
     reorderableListState: ReorderableLazyListState,
     selectedTaskIds: Set<Int>,
     listColorMap: Map<Int, Long>,
+    mergedListIds: Set<Int>,
     isSelectionMode: Boolean,
     canDrag: Boolean,
     showCompleted: Boolean,
@@ -1662,6 +1717,7 @@ private fun TaskListContent(
                     TaskCard(
                         task = task,
                         listThemeColor = listColor,
+                        isMergedInfo = task.listId in mergedListIds,
                         isSelected = isSelected,
                         isSelectionMode = isSelectionMode,
                         onToggleTask = { onToggleTaskCompletion(task) },
@@ -1728,6 +1784,7 @@ private fun TaskListContent(
                         TaskCard(
                             task = task,
                             listThemeColor = listColor,
+                            isMergedInfo = task.listId in mergedListIds,
                             isSelected = isSelected,
                             isSelectionMode = isSelectionMode,
                             onToggleTask = { onUncompleteTask(task) },
@@ -1895,6 +1952,7 @@ fun SwipeableTaskItem(
 fun TaskCard(
     task: Task,
     listThemeColor: Long,
+    isMergedInfo: Boolean = false,
     modifier: Modifier = Modifier,
     isSelected: Boolean,
     isSelectionMode: Boolean,
@@ -1979,9 +2037,16 @@ fun TaskCard(
 
             Spacer(modifier = Modifier.width(16.dp))
 
+            // 合并格式：显示信息跳过空行后的前两行，每行各一行省略
+            val (firstLine, secondLine) = if (isMergedInfo) {
+                TaskText.displayLines(task.title, task.content)
+            } else {
+                task.title to task.content
+            }
+
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = task.title,
+                    text = firstLine,
                     fontWeight = FontWeight.Bold,
                     fontSize = MaterialTheme.typography.titleMedium.fontSize,
                     color = if (task.isCompleted) Color(0xFF9E9E9E) else MaterialTheme.colorScheme.onSurface,
@@ -1990,14 +2055,14 @@ fun TaskCard(
                     overflow = TextOverflow.Ellipsis
                 )
 
-                if (task.content.isNotBlank()) {
+                if (secondLine.isNotBlank()) {
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = task.content,
+                        text = secondLine,
                         fontSize = MaterialTheme.typography.bodyMedium.fontSize,
                         color = if (task.isCompleted) Color(0xFF9E9E9E) else MaterialTheme.colorScheme.onSurfaceVariant,
                         textDecoration = if (task.isCompleted) TextDecoration.LineThrough else null,
-                        maxLines = 2,
+                        maxLines = if (isMergedInfo) 1 else 2,
                         overflow = TextOverflow.Ellipsis
                     )
                 }

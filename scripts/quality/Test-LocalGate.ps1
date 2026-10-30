@@ -355,6 +355,24 @@ exec pwsh -NoProfile -File "`$PSScriptRoot/.test-gradlew.ps1" "`$@"
     $passed++
     Write-Host "PASS: 场景 15 工作流变更触发门禁成功"
 
+    # 场景 16: Claude Skill 入口属于纯文档，提交跳过 Gradle
+    Write-Host "测试场景 16: Claude Skill 入口提交跳过 Gradle..."
+    if (@(Invoke-FixtureGit @('diff', '--cached', '--name-only')).Count -gt 0) { throw "场景 16 开始前暂存区应为空" }
+    $entryPath = '.claude/skills/write-execution-plan/SKILL.md'
+    $origEntry = [IO.File]::ReadAllText((Join-Path $fixture $entryPath))
+    Write-Fixture $entryPath ($origEntry + "`n入口说明补充。`n")
+    Invoke-FixtureGit @('add', '--', $entryPath)
+    if (Test-Path -LiteralPath $logFile) { Remove-Item -LiteralPath $logFile }
+    $res16 = Invoke-FixtureCommit "docs(skill): update Claude entry note"
+    if ($res16.ExitCode -ne 0) { throw "Claude 入口提交失败: $($res16.Output)" }
+    if ((Get-FixtureHead) -eq $headRecover) { throw "Claude 入口提交 HEAD 未前进" }
+    if (Test-Path -LiteralPath $logFile) {
+        throw "Claude 入口提交不应调用 Gradle，但检测到了参数日志: $([IO.File]::ReadAllText($logFile))"
+    }
+    $headRecover = Get-FixtureHead
+    $passed++
+    Write-Host "PASS: 场景 16 Claude Skill 入口跳过 Gradle 成功"
+
     Write-Host "`nPASS: 全部 $passed 项本地门禁隔离回归场景验证通过。"
 } finally {
     $resolvedFixture = [IO.Path]::GetFullPath($fixture)

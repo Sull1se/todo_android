@@ -106,7 +106,7 @@ try {
         $paths = @($paths | Where-Object { Test-Path -LiteralPath (Join-Path $docRoot $_) -PathType Leaf })
     }
     $docExtensions = '\.(md|markdown|mdx|rst|adoc|txt|org)$'
-    foreach ($managedRoot in @('docs', '.agents/skills')) {
+    foreach ($managedRoot in @('docs', '.agents/skills', '.claude/skills')) {
         if ($Staged -or -not (Test-Path -LiteralPath (Join-Path $docRoot $managedRoot))) { continue }
         foreach ($file in Get-ChildItem -LiteralPath (Join-Path $docRoot $managedRoot) -File -Recurse -Force) {
             $relative = [IO.Path]::GetRelativePath($docRoot, $file.FullName).Replace('\', '/')
@@ -115,10 +115,17 @@ try {
             }
         }
     }
+    # Skill bodies live only in .agents/skills; .claude/skills holds discovery entries for Claude Code.
+    $skillSources = [ordered]@{}
+    $claudeEntries = [ordered]@{}
+    $skillDescriptions = @{}
     foreach ($path in $paths) {
         if ($path -notmatch $docExtensions) { continue }
-        $isSkill = $path -cmatch '^\.agents/skills/([a-z0-9]+(?:-[a-z0-9]+)*)/SKILL\.md$'
-        $skillName = if ($isSkill) { $Matches[1] } else { '' }
+        $isSkill = $path -cmatch '^\.(?<root>agents|claude)/skills/(?<name>[a-z0-9]+(?:-[a-z0-9]+)*)/SKILL\.md$'
+        $skillName = if ($isSkill) { $Matches['name'] } else { '' }
+        if ($isSkill) {
+            if ($Matches['root'] -ceq 'agents') { $skillSources[$skillName] = $path } else { $claudeEntries[$skillName] = $path }
+        }
         if ($path -ceq 'README.md') { continue }
         if (-not $isSkill -and $path -cne 'AGENTS.md' -and $path -cnotmatch '^docs/.+\.md$') {
             Add-Issue 'DOC-SCOPE' $path 'Move permanent knowledge to docs/*.md; explicitly manage temporary/generated inputs.'
@@ -158,6 +165,7 @@ try {
                 $skillFields['description'].Length -gt 1024 -or $skillFields['description'] -match '[<>]') {
                 Add-Issue 'DOC-META' $path 'Skill description must be plain text of 1-1024 characters without angle brackets.'
             }
+            $skillDescriptions[$path] = $skillFields['description']
         }
         foreach ($key in @('title', 'purpose', 'status', 'owner', 'scope', 'updated', 'verification', 'verified')) {
             if (-not $metadata.ContainsKey($key) -or [string]::IsNullOrWhiteSpace($metadata[$key])) {
@@ -183,6 +191,29 @@ try {
         }
         $documents[$path] = [pscustomobject]@{ Text = $value; Metadata = $metadata }
     }
+    foreach ($name in $skillSources.Keys) {
+        if (-not $claudeEntries.Contains($name)) {
+            Add-Issue 'DOC-SKILL' $skillSources[$name] "Missing Claude entry .claude/skills/$name/SKILL.md; Claude Code only discovers that path."
+        }
+    }
+    foreach ($name in $claudeEntries.Keys) {
+        $entry = $claudeEntries[$name]
+        if (-not $skillSources.Contains($name)) {
+            Add-Issue 'DOC-SKILL' $entry "No body source .agents/skills/$name/SKILL.md. Create the source or remove the entry."
+            continue
+        }
+        if ($documents.Contains($entry) -and $skillDescriptions[$entry] -cne $skillDescriptions[$skillSources[$name]]) {
+            Add-Issue 'DOC-SKILL' $entry 'Claude entry description must match its .agents/skills source exactly.'
+        }
+        if (-not $documents.Contains($entry)) { continue }
+        $body = Remove-CodeBlocks ([regex]::Replace($documents[$entry].Text, '\A---\n.*?\n---\n', '', 'Singleline'))
+        if (-not $body.Contains("``.agents/skills/$name/SKILL.md``")) {
+            Add-Issue 'DOC-SKILL' $entry "Claude entry must direct readers to ``.agents/skills/$name/SKILL.md``."
+        }
+        if ($body -match '(?m)^#{2,6}\s') {
+            Add-Issue 'DOC-SKILL' $entry 'Claude entry must not carry Skill steps; keep the body only in .agents/skills.'
+        }
+    }
     if ($issues.Count -gt 0) { throw 'DOC-SOURCE: fix inventory/metadata before generating or validating links.' }
     # docs/archive/index.md is required and generated only when at least one archived
     # document exists; keeping a pre-built empty index is rejected (see docs/documentation.md).
@@ -197,7 +228,7 @@ try {
 
     $indexRows = @('| 文档 | 用途 | 生命周期 | 验证状态 |', '| --- | --- | --- | --- |')
     foreach ($path in $documents.Keys) {
-        if ($path -cmatch '^\.agents/skills/') { continue }
+        if ($path -cmatch '^\.(agents|claude)/skills/') { continue }
         if ($path -cmatch '^docs/archive/' -and $path -cne 'docs/archive/index.md') { continue }
         $meta = $documents[$path].Metadata
         $link = [IO.Path]::GetRelativePath((Join-Path $docRoot 'docs'), (Join-Path $docRoot $path)).Replace('\', '/')
@@ -273,8 +304,8 @@ try {
                 continue
             }
             $relative = [IO.Path]::GetRelativePath($docRoot, $absolute).Replace('\', '/')
-            if ($relative -cmatch '^\.agents/skills(?:/|$)') {
-                Add-Issue 'DOC-LINK' $location 'Managed Markdown must not link to Skills; standard-path Skills are injected automatically.'
+            if ($relative -cmatch '^\.(agents|claude)/skills(?:/|$)') {
+                Add-Issue 'DOC-LINK' $location 'Managed Markdown must not link to Skills; agents discover them from their own Skill paths.'
                 continue
             }
             $exists = if ($Staged) { $relative -cin $paths -or @($paths | Where-Object { $_.StartsWith("$relative/", [StringComparison]::Ordinal) }).Count -gt 0 }
@@ -303,7 +334,7 @@ try {
         foreach ($next in $edges[$path]) { $queue.Enqueue($next) }
     }
     foreach ($path in $documents.Keys) {
-        if ($path -cmatch '^\.agents/skills/') { continue }
+        if ($path -cmatch '^\.(agents|claude)/skills/') { continue }
         if (-not $seen.Contains($path)) { Add-Issue 'DOC-REACHABLE' $path 'Unreachable from AGENTS.md. Repair entry/index links.' }
     }
     if ($issues.Count -gt 0) { throw 'Documentation validation failed.' }

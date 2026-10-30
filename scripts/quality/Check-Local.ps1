@@ -31,7 +31,7 @@ function Test-IsPureDocPath([string]$path) {
     # documentation inputs: editing them alone must not trigger the Gradle gates.
     if ($norm -eq 'README.md') { return $true }
     if ($norm -eq 'LICENSE') { return $true }
-    if ($norm -match '^\.agents/skills/[^/]+/SKILL\.md$') { return $true }
+    if ($norm -match '^\.(agents|claude)/skills/[^/]+/SKILL\.md$') { return $true }
     return $false
 }
 

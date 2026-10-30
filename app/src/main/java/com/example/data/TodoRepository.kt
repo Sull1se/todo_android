@@ -80,14 +80,20 @@ class TodoRepository(
         return@withTransaction true
     }
 
-    suspend fun insertList(name: String, themeColor: Long, showInSummary: Boolean = true): Long = database.withTransaction {
+    suspend fun insertList(
+        name: String,
+        themeColor: Long,
+        showInSummary: Boolean = true,
+        contentMode: Int = TaskContentMode.TITLE_AND_DETAIL
+    ): Long = database.withTransaction {
         val maxOrder = todoDao.getMaxListDisplayOrder() ?: -1
         todoDao.insertTaskList(
             TaskList(
                 name = name,
                 themeColor = themeColor,
                 displayOrder = maxOrder + 1,
-                showInSummary = showInSummary
+                showInSummary = showInSummary,
+                contentMode = contentMode
             )
         )
     }
@@ -114,6 +120,20 @@ class TodoRepository(
                 newMode = taskList.completionMode
             )
             todoDao.updateTasks(reordered)
+        }
+
+        // 合并格式切回默认：信息首行已是标题，其余行作为详细信息并去掉首尾空行
+        if (oldList != null &&
+            oldList.contentMode == TaskContentMode.MERGED &&
+            taskList.contentMode == TaskContentMode.TITLE_AND_DETAIL
+        ) {
+            val normalized = todoDao.getTasksForListSnapshot(taskList.id).mapNotNull { task ->
+                val content = TaskText.trimBlankLines(task.content)
+                if (content != task.content) task.copy(content = content) else null
+            }
+            if (normalized.isNotEmpty()) {
+                todoDao.updateTasks(normalized)
+            }
         }
     }
 
@@ -450,7 +470,8 @@ class TodoRepository(
                     displayOrder = it.displayOrder,
                     completionMode = it.completionMode,
                     timestamp = it.timestamp,
-                    showInSummary = it.showInSummary
+                    showInSummary = it.showInSummary,
+                    contentMode = it.contentMode
                 )
             },
             tasks = exportTasks.map {
@@ -489,7 +510,8 @@ class TodoRepository(
                     displayOrder = listDto.displayOrder,
                     completionMode = listDto.completionMode,
                     timestamp = listDto.timestamp,
-                    showInSummary = listDto.showInSummary
+                    showInSummary = listDto.showInSummary,
+                    contentMode = listDto.contentMode
                 )
                 val newId = todoDao.insertTaskList(list).toInt()
                 idMapping[listDto.id] = newId
@@ -561,7 +583,8 @@ class TodoRepository(
                     displayOrder = newDisplayOrder,
                     completionMode = listDto.completionMode,
                     timestamp = listDto.timestamp,
-                    showInSummary = listDto.showInSummary
+                    showInSummary = listDto.showInSummary,
+                    contentMode = listDto.contentMode
                 )
                 val newId = todoDao.insertTaskList(list).toInt()
                 idMapping[listDto.id] = newId

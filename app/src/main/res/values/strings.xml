@@ -1,3 +1,12 @@
 <resources>
     <string name="app_name">Todo</string>
+    <string name="widget_label">待办清单</string>
+    <string name="widget_description">常驻显示一个清单的未完成待办，可快捷新建和勾选完成</string>
+    <string name="widget_preview_title">汇总</string>
+    <string name="widget_preview_item_1">示例待办</string>
+    <string name="widget_preview_item_2">点击左侧圆圈完成</string>
+    <string name="widget_empty">暂无待办</string>
+    <string name="widget_add_task">新建待办</string>
+    <string name="widget_mark_done">标记完成</string>
+    <string name="widget_flagged">已插旗</string>
 </resources>

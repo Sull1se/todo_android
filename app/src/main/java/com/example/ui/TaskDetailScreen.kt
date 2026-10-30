@@ -39,6 +39,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.ui.graphics.Color
 import com.example.data.Task
+import com.example.data.TaskContentMode
+import com.example.data.TaskText
 import com.example.ui.theme.FlagFilledIcon
 import com.example.ui.theme.FlagOutlinedIcon
 
@@ -93,6 +95,8 @@ fun TaskDetailScreen(
 ) {
     var title by rememberSaveable(taskId) { mutableStateOf("") }
     var content by rememberSaveable(taskId) { mutableStateOf("") }
+    // 合并格式清单编辑的“信息”，保存时拆回标题与详细信息
+    var info by rememberSaveable(taskId) { mutableStateOf("") }
     var isFlagged by rememberSaveable(taskId) { mutableStateOf(false) }
     var draftInitialized by rememberSaveable(taskId) { mutableStateOf(false) }
     var existingTask by remember(taskId) { mutableStateOf<Task?>(null) }
@@ -129,6 +133,8 @@ fun TaskDetailScreen(
     val isTaskInBottomCompleted = existingTask != null && existingTask!!.isCompleted && taskList?.completionMode == 1
 
     val canEdit = canInteract && existingTask != null && taskList != null && draftInitialized
+    val isMerged = taskList?.contentMode == TaskContentMode.MERGED
+    val hasText = if (isMerged) info.isNotBlank() else title.isNotBlank()
 
     LaunchedEffect(taskId) {
         if (taskId != null) {
@@ -138,6 +144,7 @@ fun TaskDetailScreen(
                 if (!draftInitialized) {
                     title = task.title
                     content = task.content
+                    info = TaskText.merge(task.title, task.content)
                     isFlagged = task.isFlagged
                     draftInitialized = true
                 }
@@ -192,11 +199,12 @@ fun TaskDetailScreen(
                     }
                     Button(
                         onClick = {
-                            if (title.isNotBlank() && taskId != null && existingTask != null) {
-                                handleExit(DetailExitAction.Save(taskId, title, content, isFlagged))
+                            if (hasText && taskId != null && existingTask != null) {
+                                val (savedTitle, savedContent) = if (isMerged) TaskText.split(info) else title to content
+                                handleExit(DetailExitAction.Save(taskId, savedTitle, savedContent, isFlagged))
                             }
                         },
-                        enabled = canEdit && title.isNotBlank(),
+                        enabled = canEdit && hasText,
                         modifier = Modifier.padding(end = 8.dp)
                     ) {
                         Text("保存")
@@ -211,28 +219,41 @@ fun TaskDetailScreen(
                 .padding(padding)
                 .padding(16.dp)
         ) {
-            OutlinedTextField(
-                value = title,
-                onValueChange = { title = it },
-                label = { Text("标题") },
-                enabled = canEdit,
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                textStyle = MaterialTheme.typography.titleLarge
-            )
+            if (isMerged) {
+                OutlinedTextField(
+                    value = info,
+                    onValueChange = { info = it },
+                    label = { Text("信息") },
+                    enabled = canEdit,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    textStyle = MaterialTheme.typography.bodyLarge
+                )
+            } else {
+                OutlinedTextField(
+                    value = title,
+                    onValueChange = { title = it },
+                    label = { Text("标题") },
+                    enabled = canEdit,
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    textStyle = MaterialTheme.typography.titleLarge
+                )
 
-            Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-            OutlinedTextField(
-                value = content,
-                onValueChange = { content = it },
-                label = { Text("详细信息") },
-                enabled = canEdit,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
-                textStyle = MaterialTheme.typography.bodyLarge
-            )
+                OutlinedTextField(
+                    value = content,
+                    onValueChange = { content = it },
+                    label = { Text("详细信息") },
+                    enabled = canEdit,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    textStyle = MaterialTheme.typography.bodyLarge
+                )
+            }
         }
 
         if (showDeleteConfirm) {

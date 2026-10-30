@@ -23,6 +23,7 @@ kotlinxCoroutinesCore = "1.10.2"
 robolectric = "4.16.1"
 roborazzi = "1.59.0"
 reorderable = "3.1.0"
+coreRemoteviews = "1.1.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -57,6 +58,7 @@ roborazzi = { group = "io.github.takahirom.roborazzi", name = "roborazzi", versi
 roborazzi-compose = { group = "io.github.takahirom.roborazzi", name = "roborazzi-compose", version.ref = "roborazzi" }
 roborazzi-junit-rule = { group = "io.github.takahirom.roborazzi", name = "roborazzi-junit-rule", version.ref = "roborazzi" }
 reorderable = { group = "sh.calvin.reorderable", name = "reorderable", version.ref = "reorderable" }
+androidx-core-remoteviews = { group = "androidx.core", name = "core-remoteviews", version.ref = "coreRemoteviews" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

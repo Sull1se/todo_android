@@ -3,6 +3,7 @@ package com.example.data.transfer
 import android.util.JsonReader
 import android.util.JsonToken
 import android.util.JsonWriter
+import com.example.data.TaskContentMode
 import java.io.File
 import java.io.Reader
 import java.io.Writer
@@ -45,6 +46,9 @@ object JsonBackupCodec {
             jsonWriter.name("completionMode").value(list.completionMode)
             jsonWriter.name("timestamp").value(list.timestamp)
             jsonWriter.name("showInSummary").value(list.showInSummary)
+            if (backup.formatVersion >= 3) {
+                jsonWriter.name("contentMode").value(list.contentMode)
+            }
             jsonWriter.endObject()
         }
         jsonWriter.endArray()
@@ -160,8 +164,8 @@ object JsonBackupCodec {
                 throw IllegalArgumentException("不支持的文件格式: $format，预期为 ${BackupData.BACKUP_FORMAT}")
             }
             if (formatVersion == null) throw IllegalArgumentException("缺少 formatVersion 版本号")
-            if (formatVersion !in listOf(1, 2)) {
-                throw IllegalArgumentException("不支持的备份版本: $formatVersion，当前支持版本为 1 或 2")
+            if (formatVersion !in listOf(1, 2, 3)) {
+                throw IllegalArgumentException("不支持的备份版本: $formatVersion，当前支持版本为 1、2 或 3")
             }
             if (exportedAt.isNullOrBlank()) throw IllegalArgumentException("缺少 exportedAt 导出时间")
             if (sourceAppVersion.isNullOrBlank()) throw IllegalArgumentException("缺少 sourceAppVersion 应用版本")
@@ -175,6 +179,15 @@ object JsonBackupCodec {
                 } else {
                     raw.showInSummary ?: throw IllegalArgumentException("清单缺少 showInSummary")
                 }
+                // 版本 3 起记录待办格式；更早版本的清单都是默认格式
+                val contentMode = if (formatVersion < 3) {
+                    raw.contentMode ?: TaskContentMode.TITLE_AND_DETAIL
+                } else {
+                    raw.contentMode ?: throw IllegalArgumentException("清单缺少 contentMode")
+                }
+                if (!TaskContentMode.isValid(contentMode)) {
+                    throw IllegalArgumentException("清单 contentMode 必须为 0 或 1，实际为: $contentMode")
+                }
                 TaskListBackupDto(
                     id = raw.id,
                     name = raw.name,
@@ -182,7 +195,8 @@ object JsonBackupCodec {
                     displayOrder = raw.displayOrder,
                     completionMode = raw.completionMode,
                     timestamp = raw.timestamp,
-                    showInSummary = showInSummary
+                    showInSummary = showInSummary,
+                    contentMode = contentMode
                 )
             }
 
@@ -225,7 +239,8 @@ object JsonBackupCodec {
         val displayOrder: Int,
         val completionMode: Int,
         val timestamp: Long,
-        val showInSummary: Boolean?
+        val showInSummary: Boolean?,
+        val contentMode: Int?
     )
 
     private data class RawTaskDto(
@@ -247,6 +262,7 @@ object JsonBackupCodec {
         var completionMode: Int? = null
         var timestamp: Long? = null
         var showInSummary: Boolean? = null
+        var contentMode: Int? = null
 
         val seenKeys = mutableSetOf<String>()
         reader.beginObject()
@@ -263,6 +279,7 @@ object JsonBackupCodec {
                 "completionMode" -> completionMode = reader.nextInt()
                 "timestamp" -> timestamp = reader.nextLong()
                 "showInSummary" -> showInSummary = reader.nextBoolean()
+                "contentMode" -> contentMode = reader.nextInt()
                 else -> throw IllegalArgumentException("清单对象中存在未知字段: $key")
             }
         }
@@ -275,7 +292,8 @@ object JsonBackupCodec {
             displayOrder = displayOrder ?: throw IllegalArgumentException("清单缺少 displayOrder"),
             completionMode = completionMode ?: throw IllegalArgumentException("清单缺少 completionMode"),
             timestamp = timestamp ?: throw IllegalArgumentException("清单缺少 timestamp"),
-            showInSummary = showInSummary
+            showInSummary = showInSummary,
+            contentMode = contentMode
         )
     }
 

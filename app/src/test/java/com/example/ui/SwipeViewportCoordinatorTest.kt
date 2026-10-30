@@ -911,4 +911,50 @@ class SwipeViewportCoordinatorTest {
 
         coord.reset()
     }
+
+    @Test
+    fun l601_flaggedCreate_onlyTracksTasksBelongingToCurrentPage() = testScope.runTest {
+        // L601: 插旗新建回顶只登记属于当前页面的新任务，其他清单或其他页面不施加视口动作
+        coordinator.onFlaggedTaskCreated(taskId = 201, listId = 2, currentPageId = 1)
+        assertFalse(coordinator.isAwaitingCreatedTaskTop)
+
+        coordinator.onFlaggedTaskCreated(taskId = 201, listId = 1, currentPageId = 2)
+        assertFalse(coordinator.isAwaitingCreatedTaskTop)
+
+        coordinator.onFlaggedTaskCreated(taskId = 201, listId = 1, currentPageId = 1)
+        assertTrue(coordinator.isAwaitingCreatedTaskTop)
+    }
+
+    @Test
+    fun l602_flaggedCreate_cancelledByUserInterruptionAndOtherViewportActions() = testScope.runTest {
+        // L602: 用户手势、左滑协调、换页均放弃待执行的新建回顶，不在之后迟到滚动
+        coordinator.onFlaggedTaskCreated(taskId = 201, listId = 1, currentPageId = 1)
+        assertTrue(coordinator.isAwaitingCreatedTaskTop)
+        coordinator.onUserInterruption()
+        assertFalse(coordinator.isAwaitingCreatedTaskTop)
+
+        coordinator.onFlaggedTaskCreated(taskId = 202, listId = 1, currentPageId = 1)
+        assertTrue(coordinator.isAwaitingCreatedTaskTop)
+        coordinator.onSwipeToggleFlag(task2, 1) { /* 悬挂 */ }
+        assertFalse(coordinator.isAwaitingCreatedTaskTop)
+        coordinator.reset()
+
+        coordinator.onFlaggedTaskCreated(taskId = 203, listId = 1, currentPageId = 1)
+        assertTrue(coordinator.isAwaitingCreatedTaskTop)
+        coordinator.onPageSelected(-1)
+        assertFalse(coordinator.isAwaitingCreatedTaskTop)
+    }
+
+    @Test
+    fun l603_flaggedCreate_givesUpAfterTimeoutWhenTaskNeverBecomesFirst() = testScope.runTest {
+        // L603: 新任务始终未成为当前帧 M 首项时，超时后放弃而不滚动
+        coordinator.onFlaggedTaskCreated(taskId = 999, listId = 1, currentPageId = 1)
+        assertTrue(coordinator.isAwaitingCreatedTaskTop)
+
+        testScheduler.advanceTimeBy(2600)
+        testScheduler.runCurrent()
+
+        assertFalse(coordinator.isAwaitingCreatedTaskTop)
+        assertEquals(0, listState.firstVisibleItemIndex)
+    }
 }

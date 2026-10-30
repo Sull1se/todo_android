@@ -40,11 +40,25 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.ui.ThemeMode
+import com.example.widget.AppLaunchRequest
+import com.example.widget.WidgetLaunch
+import com.example.widget.WidgetRefresher
+import android.content.Intent
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 
 class MainActivity : ComponentActivity() {
+    // 桌面小卡片发来的打开请求（切换清单 / 打开详情），消费后清空
+    private var launchRequest by mutableStateOf<AppLaunchRequest?>(null)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        WidgetRefresher.start(this)
+        if (savedInstanceState == null) {
+            launchRequest = WidgetLaunch.parse(intent)
+        }
 
         val database = AppDatabase.getDatabase(this)
         val repository = TodoRepository(database.todoDao(), database)
@@ -52,8 +66,18 @@ class MainActivity : ComponentActivity() {
         val factory = TodoViewModelFactory(repository, sharedPrefs)
 
         setContent {
-            TodoApp(factory)
+            TodoApp(
+                factory = factory,
+                launchRequest = launchRequest,
+                onLaunchRequestHandled = { launchRequest = null }
+            )
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        WidgetLaunch.parse(intent)?.let { launchRequest = it }
     }
 }
 
@@ -63,7 +87,9 @@ const val DetailExitTransitionMillis = 120
 @Composable
 fun TodoApp(
     factory: TodoViewModelFactory,
-    navController: NavHostController = rememberNavController()
+    navController: NavHostController = rememberNavController(),
+    launchRequest: AppLaunchRequest? = null,
+    onLaunchRequestHandled: () -> Unit = {}
 ) {
     val viewModel: TodoViewModel = viewModel(factory = factory)
     val themeMode by viewModel.themeMode.collectAsStateWithLifecycle()
@@ -96,6 +122,12 @@ fun TodoApp(
             modifier = Modifier.fillMaxSize(),
             color = MaterialTheme.colorScheme.background
         ) {
+            LaunchedEffect(launchRequest) {
+                val request = launchRequest ?: return@LaunchedEffect
+                handleLaunchRequest(navController, viewModel, request)
+                onLaunchRequestHandled()
+            }
+
             NavHost(navController = navController, startDestination = "home") {
                 composable(
                     route = "home",
@@ -140,6 +172,28 @@ fun TodoApp(
                 }
             }
         }
+    }
+}
+
+/**
+ * 卡片请求：切到对应清单；带任务时回到首页后打开该任务详情（已在该详情页则不重复打开）。
+ */
+fun handleLaunchRequest(
+    navController: NavController,
+    viewModel: TodoViewModel,
+    request: AppLaunchRequest
+) {
+    viewModel.selectList(request.listId)
+    val current = navController.currentBackStackEntry
+    val isDetail = current?.destination?.route == "detail/{taskId}"
+    if (isDetail && request.taskId != null && current?.arguments?.getInt("taskId") == request.taskId) {
+        return
+    }
+    if (isDetail) {
+        navController.popBackStack("home", inclusive = false)
+    }
+    if (request.taskId != null) {
+        navController.navigate("detail/${request.taskId}")
     }
 }
 

@@ -8,7 +8,7 @@ import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
-@Database(entities = [TaskList::class, Task::class, AppMetadata::class], version = 6, exportSchema = true)
+@Database(entities = [TaskList::class, Task::class, AppMetadata::class], version = 7, exportSchema = true)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun todoDao(): TodoDao
 
@@ -89,12 +89,19 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_6_7 = object : Migration(6, 7) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // 清单待办格式：0 = 标题 + 详细信息（原有清单保持不变），1 = 合并为信息
+                db.execSQL("ALTER TABLE `task_lists` ADD COLUMN `contentMode` INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
         fun databaseBuilder(context: Context, databaseName: String = "todo_database"): Builder<AppDatabase> {
             return Room.databaseBuilder(
                 context.applicationContext,
                 AppDatabase::class.java,
                 databaseName
-            ).addMigrations(MIGRATION_4_5, MIGRATION_5_6)
+            ).addMigrations(MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
         }
 
         fun getDatabase(context: Context): AppDatabase {

@@ -127,15 +127,37 @@ try {
     Write-Fixture $skillPath ($originalSkill + "`n[broken](../../../docs/missing.md)`n")
     Expect-Check 'skill links are validated' @('-Mode', 'Check') 1 'DOC-LINK'
     Write-Fixture $skillPath $originalSkill
+    $entryPath = '.claude/skills/write-execution-plan/SKILL.md'
+    $originalEntrySkill = Read-FixtureText $entryPath
+    Remove-Item -LiteralPath (Join-Path $fixture $entryPath)
+    Expect-Check 'skill without Claude entry fails' @('-Mode', 'Check') 1 'DOC-SKILL.*Missing Claude entry'
+    Write-Fixture $entryPath ([regex]::Replace($originalEntrySkill, '(?m)^description:.*$', 'description: 漂移的触发描述'))
+    Expect-Check 'Claude entry description drift fails' @('-Mode', 'Check') 1 'DOC-SKILL.*description must match'
+    Write-Fixture $entryPath $originalEntrySkill.Replace('`.agents/skills/write-execution-plan/SKILL.md`', '正文来源')
+    Expect-Check 'Claude entry must point to its source' @('-Mode', 'Check') 1 'DOC-SKILL.*direct readers'
+    Write-Fixture $entryPath ($originalEntrySkill + "`n## 步骤`n`n复制的正文。`n")
+    Expect-Check 'Claude entry must not carry steps' @('-Mode', 'Check') 1 'DOC-SKILL.*must not carry'
+    Write-Fixture $entryPath $originalEntrySkill
+    Write-Fixture '.claude/skills/orphan-entry/SKILL.md' $originalEntrySkill.Replace('write-execution-plan', 'orphan-entry')
+    Expect-Check 'Claude entry without source fails' @('-Mode', 'Check') 1 'DOC-SKILL.*No body source'
+    Remove-Item -LiteralPath (Join-Path $fixture '.claude/skills/orphan-entry') -Recurse
+    Write-Fixture 'docs/todo.md' ($originalTodo + "`n[Entry](../.claude/skills/write-execution-plan/SKILL.md)`n")
+    Expect-Check 'document links to Claude entries are prohibited' @('-Mode', 'Check') 1 'DOC-LINK.*must not link to Skills'
+    Write-Fixture 'docs/todo.md' $originalTodo
     $newSkillPath = '.agents/skills/test-discovery/SKILL.md'
+    $newEntryPath = '.claude/skills/test-discovery/SKILL.md'
     Write-Fixture $newSkillPath ($originalSkill.Replace('name: write-execution-plan', 'name: test-discovery'))
+    Write-Fixture $newEntryPath $originalEntrySkill.Replace('write-execution-plan', 'test-discovery')
     Write-Fixture '.git/info/exclude' "/$newSkillPath`n"
     Expect-Check 'ignored skill is detected' @('-Mode', 'Check') 1 'DOC-SCOPE'
+    Write-Fixture '.git/info/exclude' "/$newEntryPath`n"
+    Expect-Check 'ignored Claude entry is detected' @('-Mode', 'Check') 1 'DOC-SCOPE'
     Write-Fixture '.git/info/exclude' ''
     Expect-Check 'new skill needs no document index link' @('-Mode', 'Check') 0
     Expect-Check 'new skill leaves index unchanged' @('-Mode', 'Sync') 0
     if ($originalIndex -cne [IO.File]::ReadAllText((Join-Path $fixture 'docs/index.md'))) { throw 'Skill changed the document index.' }
     Remove-Item -LiteralPath (Join-Path $fixture $newSkillPath)
+    Remove-Item -LiteralPath (Join-Path $fixture $newEntryPath)
     Expect-Check 'skill removal leaves index unchanged' @('-Mode', 'Check') 0
 
     # Archive index regressions: a pre-built empty index is rejected, archive documents

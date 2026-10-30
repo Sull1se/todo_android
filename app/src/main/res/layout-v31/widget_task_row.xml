@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 卡片待办行（Android 12+）：原生圆形复选框，点下即由桌面本地打勾，随后该行被移除 -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingTop="1dp"
+    android:paddingBottom="1dp">
+
+    <CheckBox
+        android:id="@+id/widget_row_check"
+        android:layout_width="36dp"
+        android:layout_height="36dp"
+        android:background="@null"
+        android:button="@drawable/widget_check_button"
+        android:buttonTint="@color/widget_check_tint"
+        android:contentDescription="@string/widget_mark_done"
+        android:minWidth="0dp"
+        android:minHeight="0dp"
+        android:padding="0dp" />
+
+    <include layout="@layout/widget_task_row_body" />
+</LinearLayout>

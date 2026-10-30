@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="widget_background">#FF161616</color>
+    <color name="widget_text">#FFE2E2E6</color>
+    <color name="widget_secondary_text">#FFC4C7C5</color>
+    <color name="widget_check_outline">#FF8E918F</color>
+    <color name="widget_checked">#FF8AB4F8</color>
+    <color name="widget_add_background">#FF042964</color>
+    <color name="widget_add_icon">#FFD3E3FD</color>
+    <color name="widget_flag">#FFE53935</color>
+</resources>

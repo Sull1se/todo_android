@@ -14,7 +14,9 @@ data class TaskList(
     val displayOrder: Int = 0,
     val completionMode: Int = 0, // 0 = Keep position, 1 = Move to bottom
     val timestamp: Long = System.currentTimeMillis(),
-    @ColumnInfo(defaultValue = "1") val showInSummary: Boolean = true
+    @ColumnInfo(defaultValue = "1") val showInSummary: Boolean = true,
+    /** 待办格式，取值见 [TaskContentMode]。 */
+    @ColumnInfo(defaultValue = "0") val contentMode: Int = TaskContentMode.TITLE_AND_DETAIL
 )
 
 @Entity(

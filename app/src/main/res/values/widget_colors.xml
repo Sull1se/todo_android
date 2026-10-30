@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  卡片跟随系统昼夜时使用的配色（夜间见 values-night），与应用 Color.kt 的浅色 / OLED 深色一致。
+  应用强制浅色或深色时由 WidgetViews 按 WidgetColors 中相同的色值直接设置。
+-->
+<resources>
+    <color name="widget_background">#FFFFFFFF</color>
+    <color name="widget_text">#FF1B1B1F</color>
+    <color name="widget_secondary_text">#FF444746</color>
+    <color name="widget_check_outline">#FF747775</color>
+    <color name="widget_checked">#FF0B57D0</color>
+    <color name="widget_add_background">#FFD3E3FD</color>
+    <color name="widget_add_icon">#FF041E49</color>
+    <color name="widget_flag">#FFE53935</color>
+</resources>

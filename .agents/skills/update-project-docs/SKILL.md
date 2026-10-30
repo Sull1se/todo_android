@@ -7,9 +7,9 @@ metadata:
   status: 当前有效
   owner: 当前任务 Agent；维护者负责审阅、合并与正式发布
   scope: 日常开发、修复与维护任务结束时的文档收尾
-  updated: 2026-10-02
+  updated: 2026-10-30
   verification: 已静态检查
-  verified: 2026-10-02；结构与流程审阅；未实测自动触发
+  verified: 2026-10-30；补充 Claude 入口同步指令并静态审阅；未实测自动触发
 ---
 
 # 项目文档影响与收尾
@@ -36,7 +36,7 @@ metadata:
    - 若是：对照主文档职责映射表，更新对应的唯一主文档（如 `todo.md`、`development.md`、`quality.md`）；涉及敏感信息（如设备序列号、凭据）时必须严格脱敏。
 3. **Skill 维护判断：**
    - 本次任务是否发现了现有 Agent 工作流程、角色职责边界、提示词指导或辅助脚本的缺陷或演进需求？
-   - 若是：更新对应的 `.agents/skills/<name>/SKILL.md`，同步元数据与描述，确保 Agent 执行指南与实际项目约束保持一致。
+   - 若是：更新对应的 `.agents/skills/<name>/SKILL.md`，同步元数据与描述，确保 Agent 执行指南与实际项目约束保持一致；`description` 变化或新增、删除 Skill 时同步 `.claude/skills/<name>/SKILL.md` Claude 入口。
 
 ## 任务收尾检查清单与执行
 

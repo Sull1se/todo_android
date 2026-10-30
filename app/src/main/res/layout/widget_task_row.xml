@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 卡片待办行（Android 12 以下）：RemoteViews 不支持复选框，用图片模拟，点击即完成 -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingTop="1dp"
+    android:paddingBottom="1dp">
+
+    <ImageView
+        android:id="@+id/widget_row_check"
+        android:layout_width="36dp"
+        android:layout_height="36dp"
+        android:contentDescription="@string/widget_mark_done"
+        android:scaleType="center"
+        android:src="@drawable/widget_check_off"
+        android:tint="@color/widget_check_outline" />
+
+    <include layout="@layout/widget_task_row_body" />
+</LinearLayout>

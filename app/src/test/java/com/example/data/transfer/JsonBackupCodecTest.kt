@@ -408,4 +408,57 @@ class JsonBackupCodecTest {
         assertEquals(0, backup.lists.size)
         assertEquals(0, backup.tasks.size)
     }
+
+    private fun v3Json(listFields: String) = """
+        {
+            "format": "com.aistudio.todo.backup",
+            "formatVersion": 3,
+            "exportedAt": "2026-10-19T12:00:00Z",
+            "sourceAppVersion": "3.3.0",
+            "lists": [
+                {"id": 1, "name": "清单", "themeColor": 0, "displayOrder": 1, "completionMode": 0, "timestamp": 100, "showInSummary": true$listFields}
+            ],
+            "tasks": []
+        }
+    """.trimIndent()
+
+    @Test
+    fun testV3RoundTripKeepsContentMode() {
+        val original = BackupData(
+            exportedAt = "2026-10-19T12:00:00Z",
+            sourceAppVersion = "3.3.0",
+            lists = listOf(
+                TaskListBackupDto(1, "合并清单", 0, 1, 0, 100, showInSummary = true, contentMode = 1),
+                TaskListBackupDto(2, "默认清单", 0, 2, 0, 100, showInSummary = false, contentMode = 0)
+            ),
+            tasks = emptyList()
+        )
+        assertEquals(3, original.formatVersion)
+
+        val writer = StringWriter()
+        JsonBackupCodec.writeBackup(original, writer)
+        val parsed = JsonBackupCodec.readBackup(StringReader(writer.toString()))
+
+        assertEquals(listOf(1, 0), parsed.lists.map { it.contentMode })
+    }
+
+    @Test
+    fun testV3RequiresValidContentMode() {
+        val missing = assertThrows(IllegalArgumentException::class.java) {
+            JsonBackupCodec.readBackup(StringReader(v3Json("")))
+        }
+        assertTrue(missing.message!!.contains("缺少 contentMode"))
+
+        val invalid = assertThrows(IllegalArgumentException::class.java) {
+            JsonBackupCodec.readBackup(StringReader(v3Json(", \"contentMode\": 5")))
+        }
+        assertTrue(invalid.message!!.contains("contentMode 必须为 0 或 1"))
+    }
+
+    @Test
+    fun testV2ListsDefaultToTitleAndDetailFormat() {
+        val v2 = v3Json("").replace("\"formatVersion\": 3", "\"formatVersion\": 2")
+        val parsed = JsonBackupCodec.readBackup(StringReader(v2))
+        assertEquals(0, parsed.lists.single().contentMode)
+    }
 }

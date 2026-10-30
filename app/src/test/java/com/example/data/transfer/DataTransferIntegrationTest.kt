@@ -69,7 +69,7 @@ class DataTransferIntegrationTest {
             TaskList(id = 0, name = "工作", themeColor = 0xFF111111L, displayOrder = 1, completionMode = 1, showInSummary = true)
         ).toInt()
         val list2Id = database.todoDao().insertTaskList(
-            TaskList(id = 0, name = "生活", themeColor = 0xFF222222L, displayOrder = 2, completionMode = 0, showInSummary = false)
+            TaskList(id = 0, name = "生活", themeColor = 0xFF222222L, displayOrder = 2, completionMode = 0, showInSummary = false, contentMode = 1)
         ).toInt()
 
         database.todoDao().insertTask(
@@ -86,7 +86,7 @@ class DataTransferIntegrationTest {
         val backup = repository.exportBackup("2.0.0")
         assertEquals(2, backup.lists.size)
         assertEquals(3, backup.tasks.size)
-        assertEquals(2, backup.formatVersion)
+        assertEquals(3, backup.formatVersion)
 
         // 3. Clear DB and add noise
         database.todoDao().deleteAllTasks()
@@ -110,6 +110,9 @@ class DataTransferIntegrationTest {
         assertEquals(2, restoredLists[1].displayOrder)
         assertEquals(0, restoredLists[1].completionMode)
         assertFalse(restoredLists[1].showInSummary)
+        // 3.3.0 备份版本 3 保留待办格式
+        assertEquals(0, restoredLists[0].contentMode)
+        assertEquals(1, restoredLists[1].contentMode)
 
         assertEquals(3, restoredTasks.size)
         val taskWork = restoredTasks.find { it.title == "工作任务" }

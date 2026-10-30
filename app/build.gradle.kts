@@ -13,8 +13,8 @@ android {
       applicationId = "com.aistudio.todo.xqwdfa"
     minSdk = 24
     targetSdk = 36
-    versionCode = 20
-    versionName = "3.0.0"
+    versionCode = 28
+    versionName = "3.4.3"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }
@@ -94,6 +94,7 @@ dependencies {
   implementation(libs.androidx.room.ktx)
   implementation(libs.androidx.room.runtime)
   implementation(libs.reorderable)
+  implementation(libs.androidx.core.remoteviews)
   implementation(libs.kotlinx.coroutines.android)
   implementation(libs.kotlinx.coroutines.core)
   testImplementation(libs.androidx.compose.ui.test.junit4)

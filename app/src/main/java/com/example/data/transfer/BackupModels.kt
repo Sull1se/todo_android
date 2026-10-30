@@ -10,7 +10,7 @@ data class BackupData(
 ) {
     companion object {
         const val BACKUP_FORMAT = "com.aistudio.todo.backup"
-        const val CURRENT_FORMAT_VERSION = 2
+        const val CURRENT_FORMAT_VERSION = 3
         const val MAX_FILE_SIZE_BYTES = 32L * 1024L * 1024L // 32 MiB
         const val MAX_LIST_COUNT = 10_000
         const val MAX_TASK_COUNT = 100_000
@@ -25,7 +25,8 @@ data class TaskListBackupDto(
     val displayOrder: Int,
     val completionMode: Int,
     val timestamp: Long,
-    val showInSummary: Boolean = true
+    val showInSummary: Boolean = true,
+    val contentMode: Int = 0
 )
 
 data class TaskBackupDto(

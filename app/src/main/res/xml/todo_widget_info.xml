@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  唯一的卡片入口：默认 2×2，可在 2×2 至 4×3 之间调整（3.4.0 起移除了 4 种固定尺寸入口）。
+  宽度上限由桌面网格列数约束（常见 4 列）；高度以 maxResizeHeight 限制在约 3 行。
+  启动器实际单元格尺寸各异，3 行上限需真机确认。
+-->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:configure="com.example.widget.WidgetConfigActivity"
+    android:description="@string/widget_description"
+    android:initialLayout="@layout/widget_loading"
+    android:maxResizeHeight="400dp"
+    android:minHeight="110dp"
+    android:minResizeHeight="110dp"
+    android:minResizeWidth="110dp"
+    android:minWidth="110dp"
+    android:previewLayout="@layout/widget_preview"
+    android:resizeMode="horizontal|vertical"
+    android:targetCellHeight="2"
+    android:targetCellWidth="2"
+    android:updatePeriodMillis="0"
+    android:widgetCategory="home_screen"
+    android:widgetFeatures="reconfigurable" />

@@ -7,9 +7,9 @@ metadata:
   status: 当前有效
   owner: 当前任务 Agent；维护者负责审阅、合并与正式发布
   scope: 维护者独立要求的项目文档体系全量巡检、矛盾排查与纠偏
-  updated: 2026-10-02
+  updated: 2026-10-30
   verification: 已静态检查
-  verified: 2026-10-02；结构与流程审阅；未实测自动触发
+  verified: 2026-10-30；补充 Claude 入口盘点与一致性核查指令并静态审阅；未实测自动触发
 ---
 
 # 独立文档巡检与纠偏
@@ -29,7 +29,7 @@ metadata:
    ```powershell
    pwsh -NoProfile -File scripts/docs/Manage-Docs.ps1 -Mode Check
    ```
-3. 盘点全量知识资产：包括根入口 `AGENTS.md`、产品入口页 `README.md`（维护者决定豁免检查器治理）、`docs/` 下全部 Markdown 文件、`docs/archive/` 下所有归档方案与技术记录（存在时含其归档索引），以及 `.agents/skills/*/SKILL.md`。使用 `git ls-files` 与目录枚举互相核对，严禁使用 `.gitignore` 藏匿孤立知识。
+3. 盘点全量知识资产：包括根入口 `AGENTS.md`、产品入口页 `README.md`（维护者决定豁免检查器治理）、`docs/` 下全部 Markdown 文件、`docs/archive/` 下所有归档方案与技术记录（存在时含其归档索引），`.agents/skills/*/SKILL.md` Skill 正文，以及 `.claude/skills/*/SKILL.md` Claude 入口。使用 `git ls-files` 与目录枚举互相核对，严禁使用 `.gitignore` 藏匿孤立知识。
 4. 明确本轮巡检覆盖清单与层级（已全面语义核查、仅结构检查、未覆盖或不适用）。
 
 ## 2. 规则对照与防弱化审计
@@ -52,10 +52,10 @@ metadata:
 ## 4. 索引与 Agent 可达性核对
 
 - 核对 `docs/index.md`（总索引）与归档索引的分工：
-  - 总索引呈现根入口与 `docs/` 下除具体归档页以外的正式文档；不链接自动注入的 Skill。
+  - 总索引呈现根入口与 `docs/` 下除具体归档页以外的正式文档；不链接 Skill 正文或 Claude 入口。
   - 归档索引（`docs/archive/index.md`，存在归档文档时生成）专门集中链接 `docs/archive/` 下的所有具体历史文档；目录为空时确认未预建空索引。
   - 检查可达性链路：从 `AGENTS.md` 能够顺畅访问总索引、各主文档及存在的归档索引中的每一篇文档；Skill 单独受管，不要求通过文档链接到达。
-- 核查所有 Skill 的元数据字段（8 个治理字段）、名称、目录匹配性及 `description`（无尖括号、纯文本、1–1024 字符）。
+- 核查所有 Skill 的元数据字段（8 个治理字段）、名称、目录匹配性及 `description`（无尖括号、纯文本、1–1024 字符）；确认每个 Skill 正文与 Claude 入口一一对应、描述逐字一致，入口只转读正文来源而不复制步骤。
 
 ## 5. 修正、记录与收尾交付
 

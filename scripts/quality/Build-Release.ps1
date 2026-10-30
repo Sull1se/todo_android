@@ -107,11 +107,12 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 $sigText = $sigRaw -join "`n"
-$sha256Matches = [regex]::Matches($sigText, 'Signer\s*#(\d+)\s+certificate\s+SHA-256\s+digest:\s*([0-9a-fA-F]{64})')
+# 兼容 build-tools 旧格式 "Signer #1 certificate SHA-256 digest:" 与 37+ 格式 "V2 Signer: certificate SHA-256 digest:"
+$sha256Matches = [regex]::Matches($sigText, '(?m)^\s*(?:Signer\s*#\d+|V\d+\s+Signer:)\s+certificate\s+SHA-256\s+digest:\s*([0-9a-fA-F]{64})')
 if ($sha256Matches.Count -ne 1) {
     throw "签名者数量异常，预期恰好 1 个有效签名者，实际检测到 $($sha256Matches.Count) 个签名者"
 }
-$actualCertSha256 = $sha256Matches[0].Groups[2].Value.ToLowerInvariant()
+$actualCertSha256 = $sha256Matches[0].Groups[1].Value.ToLowerInvariant()
 
 $oldDebugFingerprint = "730658f6e0a35a8ef08aa850a276733a71d884fc7e25fab689c7be00d5a45110"
 if ($actualCertSha256 -eq $oldDebugFingerprint) {
@@ -152,11 +153,22 @@ $apkVersionName = $matches[3]
 if ($apkPackage -ne 'com.aistudio.todo.xqwdfa') {
     throw "APK 包名不符，预期 com.aistudio.todo.xqwdfa，实际为 $apkPackage"
 }
-if ($apkVersionCode -ne '20') {
-    throw "APK versionCode 不符，预期 20，实际为 $apkVersionCode"
+# 预期版本取自源码构建配置，避免脚本写死版本而随发布过期
+$buildGradle = Get-Content -LiteralPath (Join-Path $repoRoot 'app/build.gradle.kts') -Raw
+if ($buildGradle -notmatch '(?m)^\s*versionCode\s*=\s*(\d+)\s*$') {
+    throw "无法从 app/build.gradle.kts 解析 versionCode"
 }
-if ($apkVersionName -ne '3.0.0') {
-    throw "APK versionName 不符，预期 3.0.0，实际为 $apkVersionName"
+$expectedVersionCode = $matches[1]
+if ($buildGradle -notmatch '(?m)^\s*versionName\s*=\s*"([^"]+)"\s*$') {
+    throw "无法从 app/build.gradle.kts 解析 versionName"
+}
+$expectedVersionName = $matches[1]
+
+if ($apkVersionCode -ne $expectedVersionCode) {
+    throw "APK versionCode 不符，预期 $expectedVersionCode，实际为 $apkVersionCode"
+}
+if ($apkVersionName -ne $expectedVersionName) {
+    throw "APK versionName 不符，预期 $expectedVersionName，实际为 $apkVersionName"
 }
 
 # 计算候选 APK SHA-256 哈希

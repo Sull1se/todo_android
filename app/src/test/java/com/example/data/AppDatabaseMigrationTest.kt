@@ -183,6 +183,38 @@ class AppDatabaseMigrationTest {
     }
 
     @Test
+    fun migrate6To7_addsDefaultContentMode_andPreservesAllData() = runBlocking {
+        val dbFile = context.getDatabasePath(testDbName)
+        dbFile.parentFile?.mkdirs()
+
+        // 按导出的 6.json 创建版本 6 数据库
+        val sqliteDb = SQLiteDatabase.openOrCreateDatabase(dbFile, null)
+        sqliteDb.execSQL("CREATE TABLE IF NOT EXISTS `task_lists` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `themeColor` INTEGER NOT NULL, `displayOrder` INTEGER NOT NULL, `completionMode` INTEGER NOT NULL, `timestamp` INTEGER NOT NULL, `showInSummary` INTEGER NOT NULL DEFAULT 1)")
+        sqliteDb.execSQL("CREATE TABLE IF NOT EXISTS `tasks` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `listId` INTEGER NOT NULL, `title` TEXT NOT NULL, `content` TEXT NOT NULL, `isCompleted` INTEGER NOT NULL, `displayOrder` INTEGER NOT NULL, `timestamp` INTEGER NOT NULL, `isFlagged` INTEGER NOT NULL, FOREIGN KEY(`listId`) REFERENCES `task_lists`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )")
+        sqliteDb.execSQL("CREATE INDEX IF NOT EXISTS `index_tasks_listId` ON `tasks` (`listId`)")
+        sqliteDb.execSQL("CREATE TABLE IF NOT EXISTS `app_metadata` (`id` INTEGER NOT NULL, `summaryOrderInitialized` INTEGER NOT NULL, PRIMARY KEY(`id`))")
+        sqliteDb.execSQL("CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)")
+        sqliteDb.execSQL("INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'ba0ece88326464229524a4085fb702cd')")
+        sqliteDb.execSQL("INSERT INTO task_lists (id, name, themeColor, displayOrder, completionMode, timestamp, showInSummary) VALUES (1, '工作', 100, 0, 1, 1000, 0)")
+        sqliteDb.execSQL("INSERT INTO tasks (id, listId, title, content, isCompleted, displayOrder, timestamp, isFlagged) VALUES (1, 1, '写周报', '周五前\n发给组长', 0, 0, 2000, 1)")
+        sqliteDb.execSQL("INSERT INTO app_metadata (id, summaryOrderInitialized) VALUES (1, 1)")
+        sqliteDb.version = 6
+        sqliteDb.close()
+
+        val appDatabase = AppDatabase.databaseBuilder(context, testDbName).build()
+        val list = appDatabase.todoDao().getAllTaskListsSnapshot().single()
+        assertEquals("工作", list.name)
+        assertEquals(1, list.completionMode)
+        assertFalse(list.showInSummary)
+        assertEquals(TaskContentMode.TITLE_AND_DETAIL, list.contentMode)
+        val task = appDatabase.todoDao().getTaskById(1)!!
+        assertEquals("写周报", task.title)
+        assertEquals("周五前\n发给组长", task.content)
+        assertTrue(task.isFlagged)
+        appDatabase.close()
+    }
+
+    @Test
     fun missingMigrationPath_failsCleanly_withoutDestructiveDataWipe() {
         val dbFile = context.getDatabasePath(testDbName)
         dbFile.parentFile?.mkdirs()

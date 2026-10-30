@@ -4,16 +4,16 @@ purpose: 发现全部正式文档并按任务找到唯一主文档
 status: 当前有效
 owner: 当前任务 Agent；维护者负责审阅与合并
 scope: 根入口、docs 正式文档与关联实现
-updated: 2026-10-02
+updated: 2026-10-30
 verification: 已静态检查
-verified: 2026-10-02；Sync/Check 核对受管文档登记与可达性；未执行 Android 验证
+verified: 2026-10-30；更正 Skill 发现路径说明；Sync/Check 核对受管文档登记与可达性；未执行 Android 验证
 ---
 
 # Todo 文档总索引
 
 从 [Agent 工作入口](../AGENTS.md) 到达这里后，先读 [当前问题与解决进度](quality.md)，再按任务进入主文档。当前版本和依赖读取 [开发与发布](development.md) 的生成表；应用行为和实现位置读取 [应用与架构](todo.md)。不需要旧对话即可确定继续工作的入口。项目介绍与快速开始见 [README](../README.md)。
 
-标准路径存放的 Skill 自动注入 Agent 上下文；本索引及其他项目文档不链接 Skill 文件。
+项目 Skill 正文在 `.agents/skills/` 维护，`.claude/skills/` 下的同名入口供 Claude Code 发现；规则见 [文档维护规则](documentation.md#文档责任与唯一落点)。本索引及其他项目文档不链接 Skill 文件。
 
 ## 按任务阅读
 

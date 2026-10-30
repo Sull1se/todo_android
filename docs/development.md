@@ -4,9 +4,9 @@ purpose: 构建、安装、签名、版本更新与数据库迁移的可复做�
 status: 当前有效
 owner: 当前任务 Agent；维护者负责审阅、合并与正式发布
 scope: 本地 Android 开发、验证与发布流程
-updated: 2026-10-02
+updated: 2026-10-30
 verification: 已静态检查
-verified: 2026-10-02；对照 3.0.0 构建配置静态核对命令、签名边界与迁移描述；Debug 命令已在本地 Windows 环境实际执行通过
+verified: 2026-10-30；对照 3.4.3 构建配置静态核对命令、签名边界、迁移描述与测试覆盖说明；单元测试、lintDebug 与 Debug 构建在本地 Windows 环境实际执行通过
 ---
 
 # Todo 开发与发布
@@ -20,10 +20,10 @@ verified: 2026-10-02；对照 3.0.0 构建配置静态核对命令、签名边�
 <!-- docs:config:start -->
 | 配置项 | 当前声明值 |
 | --- | --- |
-| versionName | `3.0.0` |
+| versionName | `3.4.3` |
 | applicationId | `com.aistudio.todo.xqwdfa` |
 | namespace | `com.example` |
-| versionCode | `20` |
+| versionCode | `28` |
 | minSdk | `24` |
 | targetSdk | `36` |
 | compileSdk API | `36` |
@@ -42,16 +42,16 @@ verified: 2026-10-02；对照 3.0.0 构建配置静态核对命令、签名边�
 | 版本目录 kotlinxCoroutinesAndroid | `1.10.2` |
 | 版本目录 kotlinxCoroutinesCore | `1.10.2` |
 | 版本目录 navigationCompose | `2.8.9` |
-| Room schema | `6` |
+| Room schema | `7` |
 <!-- docs:config:end -->
 
 当前依赖以构建脚本及上表为准。Kotlin 行指版本目录中的 Compose 编译插件声明，不冒充实际解析得到的编译器报告。
 
 ## 版本与发布状态
 
-当前源码版本为 **3.0.0 / versionCode 20**（Room schema 6），配置变化后以生成表为准。正式 Release APK 由维护者在对外发布时放入 GitHub Releases，不提交进源码仓库。
+当前源码版本为 **3.4.3 / versionCode 28**（Room schema 7，备份格式版本 3），配置变化后以生成表为准。正式 Release APK 由维护者在对外发布时放入 GitHub Releases，不提交进源码仓库。
 
-本地构建的 APK 按约定复制到仓库根目录 `dist/`（该目录被 Git 忽略），命名 `todo-v<versionName>-<variant>.apk`（如 `todo-v3.0.0-debug.apk`）。Gradle 默认输出在 `app/build/outputs/apk/`，没有自动复制任务。
+本地构建的 APK 按约定复制到仓库根目录 `dist/`（该目录被 Git 忽略），命名 `todo-v<versionName>-<variant>.apk`（如 `todo-v3.4.3-debug.apk`）。Gradle 默认输出在 `app/build/outputs/apk/`，没有自动复制任务。
 
 ## 构建前置条件
 
@@ -78,9 +78,9 @@ Debug 构建不依赖任何发行私钥，是本地验证的默认路径：
 .\gradlew.bat :app:assembleDebug
 if ($LASTEXITCODE -ne 0) { throw 'Debug 构建失败' }
 New-Item -ItemType Directory -Force dist | Out-Null
-if (Test-Path dist/todo-v3.0.0-debug.apk) { throw '目标 APK 已存在；先核对版本与哈希，不覆盖历史产物' }
-Copy-Item app/build/outputs/apk/debug/app-debug.apk dist/todo-v3.0.0-debug.apk
-if (-not (Test-Path dist/todo-v3.0.0-debug.apk)) { throw 'Debug APK 复制失败' }
+if (Test-Path dist/todo-v3.4.3-debug.apk) { throw '目标 APK 已存在；先核对版本与哈希，不覆盖历史产物' }
+Copy-Item app/build/outputs/apk/debug/app-debug.apk dist/todo-v3.4.3-debug.apk
+if (-not (Test-Path dist/todo-v3.4.3-debug.apk)) { throw 'Debug APK 复制失败' }
 ```
 
 成功条件：测试与 lint 通过、`BUILD SUCCESSFUL`，并已将本次产物复制到 `dist/`。测试报告位于 `app/build/reports/`；报告是构建产物，不提交进 Git。
@@ -89,7 +89,7 @@ if (-not (Test-Path dist/todo-v3.0.0-debug.apk)) { throw 'Debug APK 复制失败
 
 ```powershell
 adb devices
-adb -s <测试设备序列号> install -r dist/todo-v3.0.0-debug.apk
+adb -s <测试设备序列号> install -r dist/todo-v3.4.3-debug.apk
 ```
 
 尖括号必须换成测试设备序列号。成功条件包括安装成功、应用启动及对应行为验收；仅有 APK 不代表运行正常。覆盖安装若签名或版本不兼容，停止并核对包名、签名和版本，不默认卸载真实用户应用。
@@ -110,7 +110,7 @@ Android Studio 可直接 Open 仓库根目录、同步、选择设备并 Run。
 
 公开发行身份只登记**公共证书指纹**：`scripts/quality/release-certificate.sha256` 保存发行证书的 SHA-256 指纹（当前为 `936961c6acce74ade345fab6cc81902096d8f59fa73db3356fbec49f0667695d`），用于核验对外发布的 Release APK 确实由维护者的发行密钥签名。维护者交付使用 `scripts/quality/Build-Release.ps1` 统一门禁：调用 `apksigner`、`aapt` 比对指纹基线并校验 Manifest 元数据（脚本按 Windows 的 `apksigner.bat`/`aapt.exe` 描述）。从外部渠道获取 Release APK 时，应先核对签名指纹与安装边界（发行签名的 APK 无法覆盖安装旧调试签名的版本，反之亦然）；详见 [安全说明](security.md)。
 
-当前 Release 启用 R8 与资源压缩，[proguard-rules.pro](../app/proguard-rules.pro) 保留数据层和 Reorderable 类。尚无帧率与列表规模性能测量，不承诺固定大小或帧率。
+当前 Release 启用 R8 与资源压缩，[proguard-rules.pro](../app/proguard-rules.pro) 保留数据层和 Reorderable 类。`Build-Release.ps1` 以 `app/build.gradle.kts` 声明的 `versionName` / `versionCode` 校验 APK 元数据。尚无帧率与列表规模性能测量，不承诺固定大小或帧率。
 
 ## 应用版本规则
 
@@ -120,14 +120,14 @@ Android Studio 可直接 Open 仓库根目录、同步、选择设备并 Run。
 
 ## 数据迁移规则与落地
 
-**要求：保留已有清单、任务与偏好，不用破坏性重建规避缺失迁移。** 当前注册 `MIGRATION_4_5` 与 `MIGRATION_5_6`：
+**要求：保留已有清单、任务与偏好，不用破坏性重建规避缺失迁移。** 当前注册 `MIGRATION_4_5`、`MIGRATION_5_6` 与 `MIGRATION_6_7`：
 - `MIGRATION_4_5` 为 `tasks` 增加默认值 0 的 `isFlagged` 列。
 - `MIGRATION_5_6`（Room schema 升至 6 并导出 `6.json`）：验证并强制 `tasks.listId` 为非空 `Int`（发现 null 立即中止迁移以保全原数据）；为 `task_lists` 增加默认值 1 的 `showInSummary` 列；创建单行内部 `AppMetadata` 表；将所属清单完成模式为 1 且已完成任务的旗帜重置为 false。
-- 启动时由仓储检查 `AppMetadata.summaryOrderInitialized`，在 Room 事务中将旧偏好（`summary_excluded_list_ids`）迁移为对应清单的 `showInSummary` 属性并为汇总范围及各独立清单范围做连续 0-based 规范编号，完成后置初始化标志为 true 并清理旧偏好。
+- `MIGRATION_6_7`（Room schema 升至 7 并导出 `7.json`）：为 `task_lists` 增加默认值 0 的 `contentMode` 列（待办格式），原有清单保持 `AppMetadata.summaryOrderInitialized`，在 Room 事务中将旧偏好（`summary_excluded_list_ids`）迁移为对应清单的 `showInSummary` 属性并为汇总范围及各独立清单范围做连续 0-based 规范编号，完成后置初始化标志为 true 并清理旧偏好。
 
-数据库未配置破坏性回退（无 `fallbackToDestructiveMigration` 调用），缺失迁移路径时抛出异常中止打开，严格禁止清空或重建 Room 数据表。4→5 与 5→6 真实迁移数据保留、缺失路径保护失败退出及 DAO 外键约束已通过 `AppDatabaseMigrationTest` 与 `TodoDaoTest` 验证。
+数据库未配置破坏性回退（无 `fallbackToDestructiveMigration` 调用），缺失迁移路径时抛出异常中止打开，严格禁止清空或重建 Room 数据表。4→5、5→6 与 6→7 真实迁移数据保留、缺失路径保护失败退出及 DAO 外键约束已通过 `AppDatabaseMigrationTest` 与 `TodoDaoTest` 验证。
 
-**当前迁移下限为 schema 4。** schema 1–3 没有到 6 的迁移路径；现有 schema 3 用例验证的是失败时保留数据，不是成功升级或应用级恢复。当前启动协程没有迁移异常恢复界面。仓库内 schema 基线文件只有 `5.json` 和 `6.json`；4→5→6 用例通过手写 SQL 创建 v4 库，因此缺少 `4.json` 不等于没有测试，但仍缺真实 schema 4 基线文件对应证据。维护者决定不支持 schema 1–3 历史兼容，迁移下限固定为 schema 4；保留缺失迁移抛错保全原库保护与 4/5→6 验证，不补 1–3 迁移或恢复界面。
+**当前迁移下限为 schema 4。** schema 1–3 没有到 7 的迁移路径；现有 schema 3 用例验证的是失败时保留数据，不是成功升级或应用级恢复。当前启动协程没有迁移异常恢复界面。仓库内 schema 基线文件只有 `5.json`、`6.json` 与 `7.json`；4→5→6 用例通过手写 SQL 创建 v4 库，因此缺少 `4.json` 不等于没有测试，但仍缺真实 schema 4 基线文件对应证据。维护者决定不支持 schema 1–3 历史兼容，迁移下限固定为 schema 4；保留缺失迁移抛错保全原库保护与 4/5→6 验证，不补 1–3 迁移或恢复界面。
 
 4/5→6 还要求旧任务全部具有有效清单归属（升级的前置保证），故拒绝 null 归属为已确认的保护边界，不自动视为新缺陷；不得因此清除旧数据。
 
@@ -164,7 +164,7 @@ Android Studio 可直接 Open 仓库根目录、同步、选择设备并 Run。
 以当次退出码及 `app/build/reports/` 中报告判断结果；测试用途与回归要求见下方说明，实际结果写入 [验收与验证历史](verification-history.md)，未闭环错误记入 [当前问题](quality.md)，不可预先勾选通过。
 
 **自动化检查入口：**
-- 提交钩子 `.githooks/pre-commit` 调用 [Check-Local.ps1](../scripts/quality/Check-Local.ps1) `-Mode Commit`：自动对暂存区运行受管文档检查与格式检查；对代码变更自动执行单元测试与 `lintDebug`；纯文档提交（含 `README.md` 与 `LICENSE`）自动跳过 Gradle。
+- 提交钩子 `.githooks/pre-commit` 调用 [Check-Local.ps1](../scripts/quality/Check-Local.ps1) `-Mode Commit`：自动对暂存区运行受管文档检查与格式检查；对代码变更自动执行单元测试与 `lintDebug`；纯文档提交（含 `README.md`、`LICENSE` 与 `.claude/skills/` 入口）自动跳过 Gradle。
 - [Check-Local.ps1](../scripts/quality/Check-Local.ps1) `-Mode Full` 在工作区运行文档检查、`git diff --check` 与完整 Gradle 测试/lint。
 - [Test-Docs.ps1](../scripts/docs/Test-Docs.ps1) 与 [Test-LocalGate.ps1](../scripts/quality/Test-LocalGate.ps1) 分别是文档工具与本地门禁自身的隔离回归。
 - GitHub CI（`.github/workflows/ci.yml`）在推送与 PR 时运行文档检查、工具回归、单元测试、lint 与 Debug 构建；不运行需要发行凭据的 Release 任务。远程实际运行结果在部署后记录，不提前声称 CI 已通过。
@@ -174,7 +174,7 @@ Android Studio 可直接 Open 仓库根目录、同步、选择设备并 Run。
 ## 现有测试实际覆盖
 
 - `TodoUnitTest` 保留实体与手工列表重排测试，不单独作为生产持久化证据；迁移由 `AppDatabaseMigrationTest` 验证，约束与级联由 `TodoDaoTest` 验证。
-- `TodoPersistenceTest` 覆盖生产 ViewModel 的连续拖拽、即时插旗、批量更新、页面快照 Flow 发射匹配；`HomeInteractionTest` 覆盖拖拽会话生命周期、防抖、换页取消与语义冲突拒绝；`SwipeViewportCoordinatorTest` 覆盖左滑视口协调器七阶段状态流转、纯决策与世代校验，以及滚动中断发帧、取消帧重置、快照页面标识校验与独立拖拽会话保持；`SwipeRefreshInteractionTest` 覆盖汇总页、参与汇总独立清单及隐藏清单左滑中断 Compose UI 交互；`UndoViewportInteractionTest` 覆盖撤销插旗视口状态机、PinPosition 定位与倒计时解耦防抖；`DetailNavigationInteractionTest` 覆盖详情页双击/快速退出防重锁、淡出转场生命周期门禁与栈保护；`DetailDraftRestorationTest` 覆盖任务详情草稿状态（标题、备注、旗帜）在 Activity/组合状态恢复、横竖屏旋转或内存重建下的持久保持与任务切换隔离；`JsonBackupCodecTest` 和 `DataTransferIntegrationTest` 覆盖必需集合校验、追加/覆盖与事务回滚；`TaskOrderEngineTest` 覆盖纯排序变换与范围划分；`ThemeAndSettingsTest` 覆盖三态主题偏好持久化、设置入口交互与 OLED 纯黑色值断言。`app/build.gradle.kts` 配置了 `testOptions.unitTests.all { it.forkEvery = 1 }`，消除测试类间静态线程调度状态污染。具体运行日期、测试数量与结果见 [验收与验证历史](verification-history.md)。
+- `TodoPersistenceTest` 覆盖生产 ViewModel 的连续拖拽、即时插旗、批量更新、页面快照 Flow 发射匹配；`HomeInteractionTest` 覆盖拖拽会话生命周期、防抖、换页取消与语义冲突拒绝；`SwipeViewportCoordinatorTest` 覆盖左滑视口协调器七阶段状态流转、纯决策与世代校验，以及滚动中断发帧、取消帧重置、快照页面标识校验、独立拖拽会话保持与插旗新建回顶的页面归属过滤、手势/左滑/换页取消与超时放弃；`CreateFlaggedViewportTest` 经真实新建弹窗覆盖插旗新建在顶部与列表中部回顶、未插旗新建与新建到其他清单时视口保持；`SwipeRefreshInteractionTest` 覆盖汇总页、参与汇总独立清单及隐藏清单左滑中断 Compose UI 交互；`UndoViewportInteractionTest` 覆盖撤销插旗视口状态机、PinPosition 定位与倒计时解耦防抖；`DetailNavigationInteractionTest` 覆盖详情页双击/快速退出防重锁、淡出转场生命周期门禁与栈保护；`DetailDraftRestorationTest` 覆盖任务详情草稿状态（标题、备注、旗帜）在 Activity/组合状态恢复、横竖屏旋转或内存重建下的持久保持与任务切换隔离；`JsonBackupCodecTest` 和 `DataTransferIntegrationTest` 覆盖必需集合校验、追加/覆盖与事务回滚；`TaskOrderEngineTest` 覆盖纯排序变换与范围划分；`ThemeAndSettingsTest` 覆盖三态主题偏好持久化、设置入口交互与 OLED 纯黑色值断言。桌面小卡片由 `WidgetDataTest`（清单回退、未完成项过滤与顺序、快捷新建默认清单）、`WidgetTaskActionsTest`（勾选完成按完成模式写库、去重与通知、快捷新建、编辑弹窗保存与删除）、`WidgetViewsTest`（RemoteViews 展开后检查标题、色点、计数与宽窄适配、行内备注 / 色条 / 旗帜、复选框恒未勾选、空状态、强制浅深色配色与昼夜颜色资源一致）、`TodoWidgetRendererTest`（经接收器渲染替换初始布局、绑定清单渲染与删除清理、恢复换号迁移、唯一可调入口尺寸声明、勾选处理中不读库即移除、内容未变时不重复推送、列表项广播完成任务并移除、打开桌面编辑弹窗）与 `WidgetLaunchTest`（卡片打开清单与详情、编辑弹窗意图）覆盖，不覆盖真实启动器的尺寸调整、滚动、点击、原生复选框本地切换、渲染耗时与进程冻结；合并信息格式由 `TaskTextTest`（换算与显示行）、`ListContentModeTest`（存储与切换整理）、`AppDatabaseMigrationTest`（6→7）、`JsonBackupCodecTest` / `DataTransferIntegrationTest`（备份版本 3）与 `MergedInfoModeUiTest`（新建弹窗、列表卡片、桌面编辑弹窗）覆盖。`app/build.gradle.kts` 配置了 `testOptions.unitTests.all { it.forkEvery = 1 }`，消除测试类间静态线程调度状态污染。具体运行日期、测试数量与结果见 [验收与验证历史](verification-history.md)。
 - [ExampleUnitTest.kt](../app/src/test/java/com/example/ExampleUnitTest.kt) 是加法示例；设备上下文测试 [ExampleInstrumentedTest.kt](../app/src/androidTest/java/com/example/ExampleInstrumentedTest.kt) 用于在真实设备核对 applicationId。示例与包名检查不覆盖复杂 UI 交互；构建配置中声明的 Roborazzi 依赖当前没有活动截图断言，不存在截图回归基线。
 - 设备端 `androidTest` 当前仅 1 项包名检查；Compose 交互、迁移与 DAO 等业务自动化在 JVM/Robolectric 层运行。维护者决定设备端测试主要依靠 APK 交付后的手动安装验收，暂不增设设备业务自动化；保留已有 androidTest 和 JVM/Robolectric 测试资产。
 - 测试覆盖说明描述用例用途；实际通过结果统一记录在验收与验证历史，不将覆盖说明作为运行证据。
@@ -193,5 +193,5 @@ Android Studio 可直接 Open 仓库根目录、同步、选择设备并 Run。
 | 拖拽边界 | 短列表、首项、滚至尽头、快速连续拖动无跳动/闪回；松手和重启后顺序一致 |
 | 删除 | 取消不删除；确认清单删除只删除所属任务，其他任务保留 |
 | 升级与签名 | 旧库测试升级保留数据，签名匹配覆盖安装；不靠清空数据通过验收 |
-| 本地导入导出 | v2 全量包含隐藏/已完成及其有效清单归属；追加保留原数据，覆盖须确认；拒绝无有效归属数据，非法文件或写入失败不改变原库，往返保留字段和关系 |
+| 桌面小卡片 | 添加后显示内容而不停留加载态，应用升级后自动重绘；只有一个可调入口（默认 2×2，可调至 4×3）且布局不截断；添加时选择清单（默认汇总），长按可重选；点勾选框后待办即时从卡片消失、无打开应用式动画，并按完成模式完成；包含隐藏/已完成及其有效清单归属；追加保留原数据，覆盖须确认；拒绝无有效归属数据，非法文件或写入失败不改变原库，往返保留字段和关系 |
 | 主题与设置 | 三态主题即时切换与重启持久化；深色 OLED 纯黑背景；应用设置与清单设置入口独立正常 |

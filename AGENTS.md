@@ -4,9 +4,9 @@ purpose: 开始任务时确认项目约束、必读入口与交付要求
 status: 当前有效
 owner: 当前任务 Agent；维护者负责审阅、合并与正式发布
 scope: 整个 Todo 仓库
-updated: 2026-10-02
+updated: 2026-10-30
 verification: 已静态检查
-verified: 2026-10-02；静态核对入口顺序、Skill 注入约定与 README 治理豁免；不代表 Android 功能已实测
+verified: 2026-10-30；新增中文回复与提交禁止署名 Agent 规则；静态核对入口顺序、Skill 发现约定与 README 治理豁免；不代表 Android 功能已实测
 ---
 
 # Todo Agent 工作入口
@@ -28,6 +28,7 @@ Todo 是使用 Kotlin、Jetpack Compose / Material 3 与 Room 构建的本地 An
 
 ## 操作边界与安全治理
 
+- 回复维护者一律使用简体中文，包括进度说明、提问和任务总结；代码、命令、路径、标识符和引用原文保持原样，提交信息仍按下方 Conventional Commits 约定。
 - 所有本地文件操作仅限当前项目文件夹；不得操作项目外内容。
 - 本地构建的 APK 存放在项目根目录 `dist/` 下；`dist/` 不进入 Git。对外发布的正式产物由维护者按 [开发与发布](docs/development.md) 的发布流程处理，不提交进源码仓库。
 - 新文件放在项目内对应子目录；正式知识文档放 `docs/`，维护工具放 `scripts/docs/`。不在根目录新增独立说明或任务计划；根 `README.md` 是产品入口页，按维护者决定不纳入文档检查器治理，见 [文档维护规则](docs/documentation.md#正式文档与元数据)。
@@ -67,3 +68,4 @@ git diff --check
 - 开始先查 `git status --short`，识别已有变更。提交所有本次及已授权纳入的变更；未经确认不得覆盖、撤销或夹带其他既有工作，需如实说明保留状态。
 - 提交前对暂存区执行 `Manage-Docs.ps1 -Mode Check -Staged`，提交后复查工作区。文档与相关代码须在同一提交中保持一致。
 - 首次克隆先按 [本地提交检查](docs/documentation.md#本地提交检查) 启用 `core.hooksPath=.githooks`；严禁使用 `--no-verify` 跳过钩子。
+- **禁止署名 Agent：** 在本仓库提交时，提交信息不得署名任何 Agent：不加 `Co-Authored-By` 等指向 Claude、Codex 或其它 Agent 的尾注，不写 “Generated with …” 类说明，作者沿用维护者的 Git 身份；PR 描述同样适用。本规则优先于 Agent 环境默认的署名指引。
