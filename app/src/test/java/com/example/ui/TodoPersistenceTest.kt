@@ -197,16 +197,18 @@ class TodoPersistenceTest {
 
         val id1 = repository.insertTask(srcId, "待办 1", "").toInt()
         val id2 = repository.insertTask(srcId, "待办 2", "").toInt()
-        repository.getTasksForList(srcId).first()
+        // 批量完成只处理当前页已加载的任务；页面数据经 Room 线程异步发射，advanceUntilIdle 不会等待
+        viewModel.pageTasks.first { page -> page.pageId == srcId && page.tasks.map { it.id }.containsAll(listOf(id1, id2)) }
         advanceUntilIdle()
 
         // 进入多选并选择全部
         viewModel.enterSelectionMode(id1)
         viewModel.toggleTaskSelection(id2)
 
-        // 批量标记为已完成
+        // 批量标记为已完成；写库在 Room 线程完成，等待数据库发射完成后的结果再断言
         viewModel.markSelectedTasksStatus(completed = true)
         advanceUntilIdle()
+        repository.getTasksForList(srcId).first { list -> list.count { it.isCompleted } == 2 }
 
         assertTrue(repository.getTaskById(id1)!!.isCompleted)
         assertTrue(repository.getTaskById(id2)!!.isCompleted)

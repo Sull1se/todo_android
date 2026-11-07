@@ -81,10 +81,12 @@ class DetailDraftRestorationTest {
             TodoApp(factory = factory, navController = nav)
         }
         composeTestRule.waitForIdle()
+        composeTestRule.waitForText("原始待办标题")
 
         // 1. 进入详情页
         composeTestRule.onNodeWithText("原始待办标题").performClick()
         composeTestRule.waitForIdle()
+        composeTestRule.waitForDetailEditable()
         assertEquals("detail/{taskId}", navController.currentDestination?.route)
 
         // 2. 修改标题、备注、旗帜
@@ -96,6 +98,7 @@ class DetailDraftRestorationTest {
         // 3. 第一次触发保存状态恢复
         restorationTester.emulateSavedInstanceStateRestore()
         composeTestRule.waitForIdle()
+        composeTestRule.waitForDetailEditable()
 
         // 断言草稿保留，数据库未写
         composeTestRule.onNodeWithText("草稿新标题").assertIsDisplayed()
@@ -111,6 +114,7 @@ class DetailDraftRestorationTest {
         // 4. 第二次触发保存状态恢复（反复恢复）
         restorationTester.emulateSavedInstanceStateRestore()
         composeTestRule.waitForIdle()
+        composeTestRule.waitForDetailEditable()
 
         composeTestRule.onNodeWithText("草稿新标题").assertIsDisplayed()
         composeTestRule.onNodeWithText("草稿新备注\n多行输入内容").assertIsDisplayed()
@@ -120,16 +124,19 @@ class DetailDraftRestorationTest {
         composeTestRule.onNodeWithText("保存").performClick()
         composeTestRule.waitForIdle()
 
+        composeTestRule.waitForRoute(navController, "home")
         assertEquals("home", navController.currentDestination?.route)
-        dbTask = runBlocking { repository.getTaskById(testTaskId) }
+        dbTask = composeTestRule.waitForTask(repository, testTaskId) { it.title == "草稿新标题" }
         assertNotNull(dbTask)
         assertEquals("草稿新标题", dbTask!!.title)
         assertEquals("草稿新备注\n多行输入内容", dbTask.content)
         assertTrue(dbTask.isFlagged)
 
         // 6. 再次进入详情，显示已保存值
+        composeTestRule.waitForText("草稿新标题")
         composeTestRule.onNodeWithText("草稿新标题").performClick()
         composeTestRule.waitForIdle()
+        composeTestRule.waitForDetailEditable()
         composeTestRule.onNodeWithText("草稿新标题").assertIsDisplayed()
         composeTestRule.onNodeWithText("草稿新备注\n多行输入内容").assertIsDisplayed()
         composeTestRule.onNodeWithContentDescription("取消插旗").assertIsDisplayed()
@@ -146,9 +153,11 @@ class DetailDraftRestorationTest {
             TodoApp(factory = factory, navController = nav)
         }
         composeTestRule.waitForIdle()
+        composeTestRule.waitForText("原始待办标题")
 
         composeTestRule.onNodeWithText("原始待办标题").performClick()
         composeTestRule.waitForIdle()
+        composeTestRule.waitForDetailEditable()
 
         composeTestRule.onNodeWithText("原始待办标题").performTextReplacement("放弃的标题")
         composeTestRule.onNodeWithText("原始详细内容").performTextReplacement("放弃的内容")
@@ -157,6 +166,7 @@ class DetailDraftRestorationTest {
 
         restorationTester.emulateSavedInstanceStateRestore()
         composeTestRule.waitForIdle()
+        composeTestRule.waitForDetailEditable()
 
         // 点击取消（Close 图标）：有未保存修改，先弹出“放弃修改？”确认（规范 4.4 决定 3）
         composeTestRule.onNodeWithContentDescription("取消").performClick()
@@ -182,8 +192,10 @@ class DetailDraftRestorationTest {
         assertFalse(dbTask.isFlagged)
 
         // 再次进入详情，依然是旧值
+        composeTestRule.waitForText("原始待办标题")
         composeTestRule.onNodeWithText("原始待办标题").performClick()
         composeTestRule.waitForIdle()
+        composeTestRule.waitForDetailEditable()
         composeTestRule.onNodeWithText("原始待办标题").assertIsDisplayed()
         composeTestRule.onNodeWithText("原始详细内容").assertIsDisplayed()
         composeTestRule.onNodeWithContentDescription("插旗").assertIsDisplayed()
@@ -198,9 +210,11 @@ class DetailDraftRestorationTest {
             TodoApp(factory = factory, navController = nav)
         }
         composeTestRule.waitForIdle()
+        composeTestRule.waitForText("原始待办标题")
 
         composeTestRule.onNodeWithText("原始待办标题").performClick()
         composeTestRule.waitForIdle()
+        composeTestRule.waitForDetailEditable()
 
         // 清空标题
         composeTestRule.onNodeWithText("原始待办标题").performTextClearance()
@@ -208,6 +222,7 @@ class DetailDraftRestorationTest {
 
         restorationTester.emulateSavedInstanceStateRestore()
         composeTestRule.waitForIdle()
+        composeTestRule.waitForDetailEditable()
 
         // 恢复后标题仍为空，保存按钮被禁用
         composeTestRule.onNodeWithText("保存").assertIsNotEnabled()
@@ -228,15 +243,18 @@ class DetailDraftRestorationTest {
             TodoApp(factory = factory, navController = nav)
         }
         composeTestRule.waitForIdle()
+        composeTestRule.waitForText("原始待办标题")
 
         // 打开 Task A 并修改
         composeTestRule.onNodeWithText("原始待办标题").performClick()
         composeTestRule.waitForIdle()
+        composeTestRule.waitForDetailEditable()
         composeTestRule.onNodeWithText("原始待办标题").performTextReplacement("A专属草稿")
         composeTestRule.waitForIdle()
 
         restorationTester.emulateSavedInstanceStateRestore()
         composeTestRule.waitForIdle()
+        composeTestRule.waitForDetailEditable()
         composeTestRule.onNodeWithText("A专属草稿").assertIsDisplayed()
 
         // 取消退出并确认放弃修改
@@ -246,8 +264,10 @@ class DetailDraftRestorationTest {
         composeTestRule.waitForIdle()
 
         // 打开 Task B -> 草稿不串用
+        composeTestRule.waitForText("第二项待办")
         composeTestRule.onNodeWithText("第二项待办").performClick()
         composeTestRule.waitForIdle()
+        composeTestRule.waitForDetailEditable()
         composeTestRule.onNodeWithText("第二项待办").assertIsDisplayed()
         composeTestRule.onNodeWithText("内容B").assertIsDisplayed()
     }
@@ -270,15 +290,20 @@ class DetailDraftRestorationTest {
             TodoApp(factory = factory, navController = nav)
         }
         composeTestRule.waitForIdle()
+        composeTestRule.waitForText("原始待办标题")
 
         // 进入自动归底清单，展开已完成并打开该任务
+        composeTestRule.waitForText("自动归底清单")
         composeTestRule.onNodeWithText("自动归底清单").performClick()
         composeTestRule.waitForIdle()
         // 点击“已完成（1）”折叠头展开
+        composeTestRule.waitForText("已完成（1）")
         composeTestRule.onNodeWithText("已完成（1）").performClick()
         composeTestRule.waitForIdle()
+        composeTestRule.waitForText("已完成待办")
         composeTestRule.onNodeWithText("已完成待办").performClick()
         composeTestRule.waitForIdle()
+        composeTestRule.waitForDetailEditable()
 
         // 底部已完成任务禁止插旗，验证无插旗按钮
         composeTestRule.onNodeWithContentDescription("插旗").assertDoesNotExist()
@@ -290,6 +315,7 @@ class DetailDraftRestorationTest {
 
         restorationTester.emulateSavedInstanceStateRestore()
         composeTestRule.waitForIdle()
+        composeTestRule.waitForDetailEditable()
 
         // 恢复后仍不可插旗，草稿备注保留
         composeTestRule.onNodeWithContentDescription("插旗").assertDoesNotExist()
@@ -308,9 +334,11 @@ class DetailDraftRestorationTest {
             TodoApp(factory = factory, navController = nav)
         }
         composeTestRule.waitForIdle()
+        composeTestRule.waitForText("原始待办标题")
 
         composeTestRule.onNodeWithText("原始待办标题").performClick()
         composeTestRule.waitForIdle()
+        composeTestRule.waitForDetailEditable()
         assertEquals("detail/{taskId}", navController.currentDestination?.route)
 
         // 在数据库中物理删除该任务
@@ -321,6 +349,7 @@ class DetailDraftRestorationTest {
         // 触发恢复 -> LaunchedEffect 发现 task 为 null，安全退出到 home
         restorationTester.emulateSavedInstanceStateRestore()
         composeTestRule.waitForIdle()
+        composeTestRule.waitForRoute(navController, "home")
 
         assertEquals("home", navController.currentDestination?.route)
     }
@@ -334,9 +363,11 @@ class DetailDraftRestorationTest {
             TodoApp(factory = factory, navController = nav)
         }
         composeTestRule.waitForIdle()
+        composeTestRule.waitForText("原始待办标题")
 
         composeTestRule.onNodeWithText("原始待办标题").performClick()
         composeTestRule.waitForIdle()
+        composeTestRule.waitForDetailEditable()
 
         val longContent = buildString {
             append("第一行长文本开始\n")
@@ -351,6 +382,7 @@ class DetailDraftRestorationTest {
 
         restorationTester.emulateSavedInstanceStateRestore()
         composeTestRule.waitForIdle()
+        composeTestRule.waitForDetailEditable()
 
         composeTestRule.onNodeWithText(longContent).assertIsDisplayed()
     }

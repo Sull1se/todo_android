@@ -75,6 +75,7 @@ class DetailNavigationInteractionTest {
             TodoApp(factory = factory, navController = nav)
         }
         composeTestRule.waitForIdle()
+        composeTestRule.waitForText("测试待办")
 
         // 1. 确认初始停留在 home
         assertEquals("home", navController.currentDestination?.route)
@@ -82,6 +83,7 @@ class DetailNavigationInteractionTest {
         // 2. 点击任务进入编辑详情
         composeTestRule.onNodeWithText("测试待办").performClick()
         composeTestRule.waitForIdle()
+        composeTestRule.waitForDetailEditable()
         assertEquals("detail/{taskId}", navController.currentDestination?.route)
 
         // 3. 修改标题
@@ -96,15 +98,16 @@ class DetailNavigationInteractionTest {
             // 节点可能已在退出或被禁用，捕获但不阻断
         }
         composeTestRule.waitForIdle()
+        composeTestRule.waitForRoute(navController, "home")
 
         // 5. 核心断言：当前目的地必须为 home，栈顶绝不为空（无白屏）
         assertNotNull(navController.currentDestination)
         assertEquals("home", navController.currentDestination?.route)
 
-        // 6. 数据正确更新
-        val updatedTask = runBlocking { repository.getTaskById(testTaskId) }
+        // 6. 数据正确更新（写库在 Room 线程完成，等待写入可见）
+        val updatedTask = composeTestRule.waitForTask(repository, testTaskId) { it.title == "已更新标题" }
         assertNotNull(updatedTask)
-        assertEquals("已更新标题", updatedTask!!.title)
+        assertEquals("已更新标题", updatedTask.title)
     }
 
     @Test
@@ -118,9 +121,11 @@ class DetailNavigationInteractionTest {
             TodoApp(factory = factory, navController = nav)
         }
         composeTestRule.waitForIdle()
+        composeTestRule.waitForText("测试待办")
 
         composeTestRule.onNodeWithText("测试待办").performClick()
         composeTestRule.waitForIdle()
+        composeTestRule.waitForDetailEditable()
         assertEquals("detail/{taskId}", navController.currentDestination?.route)
 
         // 点击保存后立即点击取消
@@ -129,6 +134,7 @@ class DetailNavigationInteractionTest {
             composeTestRule.onNodeWithContentDescription("取消").performClick()
         } catch (_: Throwable) {}
         composeTestRule.waitForIdle()
+        composeTestRule.waitForRoute(navController, "home")
 
         assertEquals("home", navController.currentDestination?.route)
         val task = runBlocking { repository.getTaskById(testTaskId) }
@@ -146,12 +152,15 @@ class DetailNavigationInteractionTest {
             TodoApp(factory = factory, navController = nav)
         }
         composeTestRule.waitForIdle()
+        composeTestRule.waitForText("测试待办")
 
         // 导航至无效 ID
         composeTestRule.runOnUiThread {
             navController.navigate("detail/999999")
         }
         composeTestRule.waitForIdle()
+        // 详情页异步读库得到 null 后才退出
+        composeTestRule.waitForRoute(navController, "home")
 
         // 验证自动退出回到 home
         assertEquals("home", navController.currentDestination?.route)
@@ -168,26 +177,31 @@ class DetailNavigationInteractionTest {
             TodoApp(factory = factory, navController = nav)
         }
         composeTestRule.waitForIdle()
+        composeTestRule.waitForText("测试待办")
 
         // 第一次进详情并取消
         composeTestRule.onNodeWithText("测试待办").performClick()
         composeTestRule.waitForIdle()
+        composeTestRule.waitForDetailEditable()
         assertEquals("detail/{taskId}", navController.currentDestination?.route)
         composeTestRule.onNodeWithContentDescription("取消").performClick()
         composeTestRule.waitForIdle()
         assertEquals("home", navController.currentDestination?.route)
 
         // 第二次进详情并正常保存
+        composeTestRule.waitForText("测试待办")
         composeTestRule.onNodeWithText("测试待办").performClick()
         composeTestRule.waitForIdle()
+        composeTestRule.waitForDetailEditable()
         assertEquals("detail/{taskId}", navController.currentDestination?.route)
 
         composeTestRule.onNodeWithText("测试待办").performTextReplacement("二次编辑")
         composeTestRule.onNodeWithText("保存").performClick()
         composeTestRule.waitForIdle()
+        composeTestRule.waitForRoute(navController, "home")
 
         assertEquals("home", navController.currentDestination?.route)
-        val task = runBlocking { repository.getTaskById(testTaskId) }
-        assertEquals("二次编辑", task!!.title)
+        val task = composeTestRule.waitForTask(repository, testTaskId) { it.title == "二次编辑" }
+        assertEquals("二次编辑", task.title)
     }
 }
