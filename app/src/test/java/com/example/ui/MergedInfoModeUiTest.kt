@@ -7,9 +7,12 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextReplacement
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.text.TextLayoutResult
 import com.example.data.Task
 import com.example.data.TaskContentMode
 import com.example.data.TaskList
+import com.example.data.TaskText
 import com.example.widget.WidgetTaskEditDialog
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -18,6 +21,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import org.robolectric.annotation.GraphicsMode
 
 /** 合并信息格式在新建弹窗、列表卡片与桌面编辑弹窗中的表现。 */
 @RunWith(RobolectricTestRunner::class)
@@ -72,10 +76,12 @@ class MergedInfoModeUiTest {
     }
 
     @Test
-    fun taskCard_mergedListShowsFirstTwoNonBlankLines() {
+    @GraphicsMode(GraphicsMode.Mode.NATIVE) // 默认模拟排版不按换行与行数限制分行，需真实文字排版
+    fun taskCard_mergedListShowsUpToThreeNonBlankLines() {
+        // APP-038：合并格式跳过空行，首行作标题，其余非空行作次要信息，总计最多三行
         composeTestRule.setContent {
             TaskCard(
-                task = Task(id = 1, listId = mergedList.id, title = "买菜", content = "\n\n西红柿\n鸡蛋"),
+                task = Task(id = 1, listId = mergedList.id, title = "买菜", content = "\n\n西红柿\n鸡蛋\n\n牛奶"),
                 listThemeColor = mergedList.themeColor,
                 isMergedInfo = true,
                 isSelected = false,
@@ -86,8 +92,81 @@ class MergedInfoModeUiTest {
         }
 
         composeTestRule.onNodeWithText("买菜").assertExists()
-        composeTestRule.onNodeWithText("西红柿").assertExists()
-        composeTestRule.onNode(hasText("鸡蛋", substring = true)).assertDoesNotExist()
+        assertEquals(2, secondaryLineCount("西红柿\n鸡蛋\n牛奶"))
+    }
+
+    @Test
+    @GraphicsMode(GraphicsMode.Mode.NATIVE) // 默认模拟排版不按换行与行数限制分行，需真实文字排版
+    fun taskCard_standardListShowsTitleAndTwoDetailLines() {
+        // APP-038：标准格式同样为标题一行 + 详细信息最多两行
+        composeTestRule.setContent {
+            TaskCard(
+                task = Task(id = 1, listId = defaultList.id, title = "周报", content = "第一行\n第二行\n第三行"),
+                listThemeColor = defaultList.themeColor,
+                isMergedInfo = false,
+                isSelected = false,
+                isSelectionMode = false,
+                onToggleTask = {},
+                onClick = {}
+            )
+        }
+
+        composeTestRule.onNodeWithText("周报").assertExists()
+        assertEquals(2, secondaryLineCount("第一行\n第二行\n第三行"))
+    }
+
+    /** 读取次要文字实际排版行数，验证被限制在 [TaskText.SECONDARY_MAX_LINES] 行。 */
+    private fun secondaryLineCount(text: String): Int {
+        val results = mutableListOf<TextLayoutResult>()
+        composeTestRule.onNodeWithText(text, useUnmergedTree = true)
+            .fetchSemanticsNode()
+            .config[SemanticsActions.GetTextLayoutResult]
+            .action!!
+            .invoke(results)
+        assertEquals(TaskText.SECONDARY_MAX_LINES, 2)
+        return results.single().lineCount
+    }
+
+    @Test
+    fun widgetEditDialog_closingWithChangesAsksToDiscard() {
+        var dismissed = false
+        composeTestRule.setContent {
+            WidgetTaskEditDialog(
+                task = Task(id = 5, listId = defaultList.id, title = "旧任务", content = ""),
+                list = defaultList,
+                onDismiss = { dismissed = true },
+                onSave = { _, _, _ -> },
+                onDelete = {}
+            )
+        }
+
+        composeTestRule.onNodeWithText("旧任务").performTextReplacement("新任务")
+        composeTestRule.onNodeWithText("取消").performClick()
+        composeTestRule.onNodeWithText("放弃修改？").assertExists()
+        assertTrue(!dismissed)
+        composeTestRule.onNodeWithText("继续编辑").performClick()
+        composeTestRule.onNodeWithText("新任务").assertExists()
+        composeTestRule.onNodeWithText("取消").performClick()
+        composeTestRule.onNodeWithText("放弃").performClick()
+        assertTrue(dismissed)
+    }
+
+    @Test
+    fun widgetEditDialog_closingWithoutChangesDismissesDirectly() {
+        var dismissed = false
+        composeTestRule.setContent {
+            WidgetTaskEditDialog(
+                task = Task(id = 5, listId = defaultList.id, title = "旧任务", content = ""),
+                list = defaultList,
+                onDismiss = { dismissed = true },
+                onSave = { _, _, _ -> },
+                onDelete = {}
+            )
+        }
+
+        composeTestRule.onNodeWithText("取消").performClick()
+        composeTestRule.onNodeWithText("放弃修改？").assertDoesNotExist()
+        assertTrue(dismissed)
     }
 
     @Test

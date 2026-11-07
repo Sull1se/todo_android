@@ -1,10 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!--
+      窗口主题（启动窗口、系统对话框外观）：继承平台 Material 主题而非厂商 DeviceDefault，
+      颜色与 Compose 主题的品牌色调一致；深色见 values-night。界面本身由 Compose MaterialTheme 绘制。
+    -->
+    <style name="Theme.MyApplication" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:colorPrimary">@color/brand_primary</item>
+        <item name="android:colorAccent">@color/brand_primary</item>
+        <item name="android:windowBackground">@color/window_background</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+    </style>
 
-    <style name="Theme.MyApplication" parent="android:Theme.DeviceDefault.NoActionBar" />
-
-    <!-- 桌面小卡片的配置页与快捷新建：透明窗口，只显示 Compose 弹窗 -->
-    <style name="Theme.MyApplication.Translucent" parent="android:Theme.DeviceDefault.NoActionBar">
+    <!-- 桌面小卡片的配置页、快捷新建与编辑弹窗：透明窗口，只显示 Compose 弹窗 -->
+    <style name="Theme.MyApplication.Translucent" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:colorPrimary">@color/brand_primary</item>
+        <item name="android:colorAccent">@color/brand_primary</item>
         <item name="android:windowIsTranslucent">true</item>
         <item name="android:windowBackground">@android:color/transparent</item>
         <item name="android:windowContentOverlay">@null</item>

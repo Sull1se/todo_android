@@ -32,11 +32,17 @@ object TaskText {
         return lines[first] to rest.joinToString("\n")
     }
 
-    /** 合并格式在列表中显示的两行：跳过空行后的前两行，第二行可能为空串。 */
+    /**
+     * 合并格式在列表中显示的文字：跳过空行后，首行作标题，其余非空行以换行连接作次要信息（可能为空串）。
+     * 列表与卡片把次要信息限制为 2 行，因此最多显示 3 行，与默认格式一致。
+     */
     fun displayLines(title: String, content: String): Pair<String, String> {
         val lines = merge(title, content).lines().filter { it.isNotBlank() }
-        return lines.getOrElse(0) { "" } to lines.getOrElse(1) { "" }
+        return lines.getOrElse(0) { "" } to lines.drop(1).joinToString("\n")
     }
+
+    /** 次要信息（详细信息，或合并格式首行之后的信息）在列表与卡片中的最多行数。 */
+    const val SECONDARY_MAX_LINES = 2
 
     /** 切回默认格式时整理详细信息：去掉首尾空行，中间内容不变。 */
     fun trimBlankLines(content: String): String =

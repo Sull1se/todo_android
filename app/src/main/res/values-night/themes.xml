@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 深色窗口主题：OLED 纯黑背景，与 Compose 深色方案一致 -->
+    <style name="Theme.MyApplication" parent="android:Theme.Material.NoActionBar">
+        <item name="android:colorPrimary">@color/brand_primary</item>
+        <item name="android:colorAccent">@color/brand_primary</item>
+        <item name="android:windowBackground">@color/window_background</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+    </style>
+
+    <style name="Theme.MyApplication.Translucent" parent="android:Theme.Material.NoActionBar">
+        <item name="android:colorPrimary">@color/brand_primary</item>
+        <item name="android:colorAccent">@color/brand_primary</item>
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowContentOverlay">@null</item>
+        <item name="android:backgroundDimEnabled">false</item>
+        <item name="android:windowNoTitle">true</item>
+    </style>
+</resources>

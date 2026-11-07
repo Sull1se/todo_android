@@ -158,8 +158,19 @@ class DetailDraftRestorationTest {
         restorationTester.emulateSavedInstanceStateRestore()
         composeTestRule.waitForIdle()
 
-        // 点击取消（Close 图标）
+        // 点击取消（Close 图标）：有未保存修改，先弹出“放弃修改？”确认（规范 4.4 决定 3）
         composeTestRule.onNodeWithContentDescription("取消").performClick()
+        composeTestRule.waitForIdle()
+        composeTestRule.onNodeWithText("放弃修改？").assertIsDisplayed()
+        // 选择继续编辑：留在详情页，草稿保留
+        composeTestRule.onNodeWithText("继续编辑").performClick()
+        composeTestRule.waitForIdle()
+        assertEquals("detail/{taskId}", navController.currentDestination?.route)
+        composeTestRule.onNodeWithText("放弃的标题").assertIsDisplayed()
+        // 再次取消并确认放弃
+        composeTestRule.onNodeWithContentDescription("取消").performClick()
+        composeTestRule.waitForIdle()
+        composeTestRule.onNodeWithText("放弃").performClick()
         composeTestRule.waitForIdle()
         assertEquals("home", navController.currentDestination?.route)
 
@@ -228,8 +239,10 @@ class DetailDraftRestorationTest {
         composeTestRule.waitForIdle()
         composeTestRule.onNodeWithText("A专属草稿").assertIsDisplayed()
 
-        // 取消退出
+        // 取消退出并确认放弃修改
         composeTestRule.onNodeWithContentDescription("取消").performClick()
+        composeTestRule.waitForIdle()
+        composeTestRule.onNodeWithText("放弃").performClick()
         composeTestRule.waitForIdle()
 
         // 打开 Task B -> 草稿不串用
@@ -262,7 +275,7 @@ class DetailDraftRestorationTest {
         composeTestRule.onNodeWithText("自动归底清单").performClick()
         composeTestRule.waitForIdle()
         // 点击“已完成（1）”折叠头展开
-        composeTestRule.onNodeWithText("已完成 (1)").performClick()
+        composeTestRule.onNodeWithText("已完成（1）").performClick()
         composeTestRule.waitForIdle()
         composeTestRule.onNodeWithText("已完成待办").performClick()
         composeTestRule.waitForIdle()

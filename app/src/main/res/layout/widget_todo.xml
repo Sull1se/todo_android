@@ -2,6 +2,7 @@
 <!--
   卡片主体：标题栏 + 待办列表 / 空状态，由 WidgetViews 直接填充为 RemoteViews。
   根视图使用 @android:id/background，桌面据此识别卡片背景（圆角、打开动画）。
+  所有可点区域（标题栏打开区、“＋”、行内勾选）至少 48dp（Widget 质量 WL-4.2），视觉尺寸保持不变。
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@android:id/background"
@@ -24,7 +25,7 @@
         <LinearLayout
             android:id="@+id/widget_header_open"
             android:layout_width="0dp"
-            android:layout_height="36dp"
+            android:layout_height="48dp"
             android:layout_weight="1"
             android:gravity="center_vertical"
             android:orientation="horizontal"
@@ -64,8 +65,8 @@
 
         <FrameLayout
             android:id="@+id/widget_add"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
             android:background="@drawable/widget_add_background"
             android:contentDescription="@string/widget_add_task">
 
@@ -83,7 +84,6 @@
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_marginTop="4dp"
         android:layout_weight="1">
 
         <ListView

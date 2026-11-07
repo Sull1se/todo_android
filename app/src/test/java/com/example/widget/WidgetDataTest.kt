@@ -67,7 +67,7 @@ class WidgetDataTest {
     }
 
     @Test
-    fun buildWidgetContent_mergedListShowsFirstTwoNonBlankLines() {
+    fun buildWidgetContent_mergedListShowsFirstLineAndRemainingNonBlankLines() {
         val merged = TaskList(id = 4, name = "随记", displayOrder = 3, contentMode = TaskContentMode.MERGED)
         val tasks = listOf(
             Task(id = 30, listId = 4, title = "买菜", content = "\n\n西红柿\n鸡蛋"),
@@ -77,7 +77,7 @@ class WidgetDataTest {
         val content = buildWidgetContent(lists + merged, SUMMARY_LIST_ID, tasks)
 
         assertEquals("买菜", content.tasks[0].title)
-        assertEquals("西红柿", content.tasks[0].content)
+        assertEquals("西红柿\n鸡蛋", content.tasks[0].content)
         // 默认格式的清单显示不变
         assertEquals("\n备注", content.tasks[1].content)
     }

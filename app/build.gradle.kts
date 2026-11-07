@@ -13,8 +13,8 @@ android {
       applicationId = "com.aistudio.todo.xqwdfa"
     minSdk = 24
     targetSdk = 36
-    versionCode = 28
-    versionName = "3.4.3"
+    versionCode = 31
+    versionName = "3.5.2"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }

@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- English translation. Keep in sync with values/strings.xml (Simplified Chinese, default). -->
+<resources>
+    <string name="app_name">Todo</string>
+
+    <string name="summary">Summary</string>
+    <string name="task_fallback">Task</string>
+    <string name="action_save">Save</string>
+    <string name="action_create">Create</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_close">Close</string>
+    <string name="action_delete">Delete</string>
+    <string name="action_clean">Clear</string>
+    <string name="action_discard">Discard</string>
+    <string name="action_keep_editing">Keep editing</string>
+    <string name="action_exit">Done</string>
+    <string name="action_select_all">Select all</string>
+    <string name="action_deselect_all">Deselect all</string>
+    <string name="action_undo">Undo</string>
+    <string name="state_selected">Selected</string>
+    <string name="state_not_selected">Not selected</string>
+    <string name="state_expanded">Expanded</string>
+    <string name="state_collapsed">Collapsed</string>
+
+    <string name="new_task">New task</string>
+    <string name="new_list">New list</string>
+    <string name="app_settings">Settings</string>
+    <string name="list_settings">List settings</string>
+    <string name="summary_settings">Summary settings</string>
+    <string name="select_tasks">Select tasks</string>
+    <plurals name="selected_count">
+        <item quantity="one">%d selected</item>
+        <item quantity="other">%d selected</item>
+    </plurals>
+    <plurals name="incomplete_count">
+        <item quantity="one">%d to do</item>
+        <item quantity="other">%d to do</item>
+    </plurals>
+    <string name="empty_tasks">No tasks</string>
+    <string name="completed_header">Completed (%d)</string>
+    <string name="mark_done">Complete</string>
+    <string name="mark_undone">Uncomplete</string>
+    <string name="move_to">Move to</string>
+    <string name="complete_task">Complete</string>
+    <string name="flag">Flag</string>
+    <string name="unflag">Unflag</string>
+    <string name="flagged">Flagged</string>
+    <string name="move_up">Move up</string>
+    <string name="move_down">Move down</string>
+    <string name="move_to_top">Move to top</string>
+    <string name="move_left">Move left</string>
+    <string name="move_right">Move right</string>
+    <string name="dismiss_message">Dismiss</string>
+
+    <string name="delete_selected_title">Delete selected tasks?</string>
+    <plurals name="delete_selected_message">
+        <item quantity="one">%d selected task will be permanently deleted. This can\'t be undone.</item>
+        <item quantity="other">%d selected tasks will be permanently deleted. This can\'t be undone.</item>
+    </plurals>
+    <string name="clean_completed_title">Clear completed tasks?</string>
+    <plurals name="clean_completed_message">
+        <item quantity="one">%d completed task at the bottom will be permanently deleted. This can\'t be undone.</item>
+        <item quantity="other">%d completed tasks at the bottom will be permanently deleted. This can\'t be undone.</item>
+    </plurals>
+    <plurals name="clean_completed_done">
+        <item quantity="one">Cleared %d completed task</item>
+        <item quantity="other">Cleared %d completed tasks</item>
+    </plurals>
+    <string name="clean_completed_none">Nothing to clear</string>
+
+    <string name="undo_flagged">Flagged</string>
+    <string name="undo_unflagged">Unflagged</string>
+    <string name="undo_completed">Completed</string>
+
+    <string name="theme_section">Appearance</string>
+    <string name="theme_system">System default</string>
+    <string name="theme_system_desc">Follow the system light or dark setting</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_light_desc">Always use the light theme</string>
+    <string name="theme_dark">Dark</string>
+    <string name="theme_dark_desc">Pure black theme for OLED screens</string>
+    <string name="data_section">Data</string>
+    <string name="data_transfer">Import and export</string>
+
+    <string name="list_name">List name</string>
+    <string name="theme_color">Color</string>
+    <string name="color_red">Red</string>
+    <string name="color_blue">Blue</string>
+    <string name="color_green">Green</string>
+    <string name="color_amber">Amber</string>
+    <string name="color_purple">Purple</string>
+    <string name="color_cyan">Cyan</string>
+    <string name="completion_mode">Completed tasks</string>
+    <string name="completion_keep">Keep in place</string>
+    <string name="completion_bottom">Move to bottom</string>
+    <string name="content_mode">Task format</string>
+    <string name="content_title_detail">Title + details</string>
+    <string name="content_merged">Single note</string>
+    <string name="delete_list">Delete list</string>
+    <string name="delete_list_title">Delete this list?</string>
+    <string name="delete_list_message">\"%1$s\" and all of its tasks will be permanently deleted. This can\'t be undone.</string>
+    <string name="move_to_list_title">Move to list</string>
+    <string name="no_lists">No lists available</string>
+    <string name="no_lists_title">No lists yet</string>
+    <string name="no_lists_message">Create a list before adding tasks.</string>
+    <string name="summary_lists_label">Lists shown in Summary</string>
+    <string name="summary_lists_hint">Tasks from unchecked lists are hidden from Summary but stay in their own list.</string>
+    <string name="summary_no_lists">No lists</string>
+
+    <string name="edit_task">Edit task</string>
+    <string name="field_title">Title</string>
+    <string name="field_detail">Details</string>
+    <string name="field_info">Note</string>
+    <string name="owner_list">List</string>
+    <string name="choose_list">Choose a list</string>
+    <string name="discard_title">Discard changes?</string>
+    <string name="discard_message">Your changes haven\'t been saved.</string>
+    <string name="delete_task_title">Delete this task?</string>
+    <string name="delete_task_message">This task will be permanently deleted. This can\'t be undone.</string>
+    <string name="task_not_found">This task no longer exists</string>
+
+    <string name="data_management_message">Export all lists and tasks to a single JSON file, or import from a backup file.\n\nBackup files are plain text and contain your tasks. Keep them safe.</string>
+    <string name="export_all">Export all data (JSON)</string>
+    <string name="import_from_json">Import from JSON file</string>
+    <string name="export_success">Export complete. Lists: %1$d, tasks: %2$d</string>
+    <string name="export_failed">Export failed: %1$s</string>
+    <string name="import_invalid">Can\'t import: %1$s</string>
+    <string name="import_failed">Import failed: %1$s</string>
+    <string name="import_overwrite_done">Data replaced. Lists: %1$d, tasks: %2$d</string>
+    <string name="import_append_done">Data added. Lists: %1$d, tasks: %2$d</string>
+    <string name="import_preview_title">Import preview</string>
+    <string name="file_info">File</string>
+    <string name="source_version">App version: %1$s</string>
+    <string name="exported_at">Exported: %1$s</string>
+    <string name="file_contains">Lists: %1$d, tasks: %2$d</string>
+    <string name="import_mode">Import mode</string>
+    <string name="import_append">Add (keep current data)</string>
+    <string name="import_append_desc">Lists and tasks from the file are added after your current data.</string>
+    <string name="import_overwrite">Replace (clear current data)</string>
+    <string name="import_overwrite_desc">Your current lists and tasks are replaced by the file\'s content.</string>
+    <string name="overwrite_warning_title">This can\'t be undone</string>
+    <string name="overwrite_warning">Replacing deletes all current data (lists: %1$d, tasks: %2$d).</string>
+    <string name="export_before_import">Export current data first</string>
+    <string name="importing">Importing…</string>
+    <string name="action_import">Import</string>
+    <string name="action_overwrite_import">Replace</string>
+    <string name="unknown_error">Unknown error</string>
+
+    <string name="widget_label">Todo list</string>
+    <string name="widget_description">Shows the open tasks of one list, with quick add and complete</string>
+    <string name="widget_preview_title">Summary</string>
+    <string name="widget_preview_item_1">Sample task</string>
+    <string name="widget_preview_item_2">Tap the circle to complete</string>
+    <string name="widget_empty">No tasks</string>
+    <string name="widget_add_task">New task</string>
+    <string name="widget_mark_done">Complete</string>
+    <string name="widget_flagged">Flagged</string>
+    <plurals name="widget_count">
+        <item quantity="one">%d task</item>
+        <item quantity="other">%d tasks</item>
+    </plurals>
+    <string name="widget_pick_list_title">List shown on widget</string>
+</resources>

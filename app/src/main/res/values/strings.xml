@@ -1,5 +1,154 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 简体中文（默认语言）。新增文字必须同时在 values-en/strings.xml 提供英文；术语见 UI 与 UX 规范第 8 节。 -->
 <resources>
     <string name="app_name">Todo</string>
+
+    <!-- 通用 -->
+    <string name="summary">汇总</string>
+    <string name="task_fallback">待办</string>
+    <string name="action_save">保存</string>
+    <string name="action_create">创建</string>
+    <string name="action_cancel">取消</string>
+    <string name="action_close">关闭</string>
+    <string name="action_delete">删除</string>
+    <string name="action_clean">清理</string>
+    <string name="action_discard">放弃</string>
+    <string name="action_keep_editing">继续编辑</string>
+    <string name="action_exit">退出</string>
+    <string name="action_select_all">全选</string>
+    <string name="action_deselect_all">全不选</string>
+    <string name="action_undo">撤销</string>
+    <string name="state_selected">已选中</string>
+    <string name="state_not_selected">未选中</string>
+    <string name="state_expanded">已展开</string>
+    <string name="state_collapsed">已折叠</string>
+
+    <!-- 首页 -->
+    <string name="new_task">新建待办</string>
+    <string name="new_list">新建清单</string>
+    <string name="app_settings">应用设置</string>
+    <string name="list_settings">清单设置</string>
+    <string name="summary_settings">汇总设置</string>
+    <string name="select_tasks">选择待办</string>
+    <plurals name="selected_count">
+        <item quantity="other">已选择 %d 项</item>
+    </plurals>
+    <plurals name="incomplete_count">
+        <item quantity="other">%d 个未完成</item>
+    </plurals>
+    <string name="empty_tasks">暂无待办</string>
+    <string name="completed_header">已完成（%d）</string>
+    <string name="mark_done">标记完成</string>
+    <string name="mark_undone">标记未完成</string>
+    <string name="move_to">移动到</string>
+    <string name="complete_task">完成</string>
+    <string name="flag">插旗</string>
+    <string name="unflag">取消插旗</string>
+    <string name="flagged">已插旗</string>
+    <string name="move_up">上移</string>
+    <string name="move_down">下移</string>
+    <string name="move_to_top">移到顶部</string>
+    <string name="move_left">左移</string>
+    <string name="move_right">右移</string>
+    <string name="dismiss_message">关闭提示</string>
+
+    <string name="delete_selected_title">删除所选待办？</string>
+    <plurals name="delete_selected_message">
+        <item quantity="other">所选的 %d 项待办将被永久删除，此操作无法撤销。</item>
+    </plurals>
+    <string name="clean_completed_title">清理已完成待办？</string>
+    <plurals name="clean_completed_message">
+        <item quantity="other">将永久删除收至底部的 %d 项已完成待办，此操作无法撤销。</item>
+    </plurals>
+    <plurals name="clean_completed_done">
+        <item quantity="other">已清理 %d 项已完成待办</item>
+    </plurals>
+    <string name="clean_completed_none">没有可清理的待办</string>
+
+    <!-- 撤销提示 -->
+    <string name="undo_flagged">已插旗</string>
+    <string name="undo_unflagged">已取消插旗</string>
+    <string name="undo_completed">已完成</string>
+
+    <!-- 应用设置 -->
+    <string name="theme_section">主题外观</string>
+    <string name="theme_system">跟随系统</string>
+    <string name="theme_system_desc">根据系统深浅色设置自动切换</string>
+    <string name="theme_light">浅色模式</string>
+    <string name="theme_light_desc">保持浅色外观</string>
+    <string name="theme_dark">深色模式</string>
+    <string name="theme_dark_desc">OLED 纯黑深色外观</string>
+    <string name="data_section">数据管理</string>
+    <string name="data_transfer">数据导入与导出</string>
+
+    <!-- 清单 -->
+    <string name="list_name">清单名称</string>
+    <string name="theme_color">主题色</string>
+    <string name="color_red">红色</string>
+    <string name="color_blue">蓝色</string>
+    <string name="color_green">绿色</string>
+    <string name="color_amber">琥珀色</string>
+    <string name="color_purple">紫色</string>
+    <string name="color_cyan">青色</string>
+    <string name="completion_mode">待办完成模式</string>
+    <string name="completion_keep">保持原位</string>
+    <string name="completion_bottom">收至底部</string>
+    <string name="content_mode">待办格式</string>
+    <string name="content_title_detail">标题 + 详细信息</string>
+    <string name="content_merged">合并为信息</string>
+    <string name="delete_list">删除清单</string>
+    <string name="delete_list_title">删除这个清单？</string>
+    <string name="delete_list_message">清单“%1$s”及其中的所有待办将被永久删除，此操作无法撤销。</string>
+    <string name="move_to_list_title">移动到清单</string>
+    <string name="no_lists">没有可用的清单</string>
+    <string name="no_lists_title">还没有清单</string>
+    <string name="no_lists_message">新建待办前需要先创建一个清单。</string>
+    <string name="summary_lists_label">在汇总中展示的清单</string>
+    <string name="summary_lists_hint">取消勾选的清单，其待办不在“汇总”页展示，但仍保留在各自的清单页中。</string>
+    <string name="summary_no_lists">暂无清单</string>
+
+    <!-- 待办编辑 -->
+    <string name="edit_task">编辑待办</string>
+    <string name="field_title">标题</string>
+    <string name="field_detail">详细信息</string>
+    <string name="field_info">信息</string>
+    <string name="owner_list">归属清单</string>
+    <string name="choose_list">请选择清单</string>
+    <string name="discard_title">放弃修改？</string>
+    <string name="discard_message">你所做的修改尚未保存。</string>
+    <string name="delete_task_title">删除这个待办？</string>
+    <string name="delete_task_message">该待办将被永久删除，此操作无法撤销。</string>
+    <string name="task_not_found">该待办已不存在</string>
+
+    <!-- 数据导入导出 -->
+    <string name="data_management_message">可将全部清单和待办导出为一个 JSON 文件，或从备份文件导入。\n\n备份文件为明文，包含你的待办内容，请妥善保管。</string>
+    <string name="export_all">导出全部数据（JSON）</string>
+    <string name="import_from_json">从 JSON 文件导入</string>
+    <string name="export_success">已导出 %1$d 个清单、%2$d 项待办</string>
+    <string name="export_failed">导出失败：%1$s</string>
+    <string name="import_invalid">无法导入：%1$s</string>
+    <string name="import_failed">导入失败：%1$s</string>
+    <string name="import_overwrite_done">覆盖导入完成：已载入 %1$d 个清单、%2$d 项待办</string>
+    <string name="import_append_done">追加导入完成：已新增 %1$d 个清单、%2$d 项待办</string>
+    <string name="import_preview_title">导入数据预览</string>
+    <string name="file_info">文件信息</string>
+    <string name="source_version">来源版本：%1$s</string>
+    <string name="exported_at">导出时间：%1$s</string>
+    <string name="file_contains">文件包含：%1$d 个清单、%2$d 项待办</string>
+    <string name="import_mode">导入方式</string>
+    <string name="import_append">追加导入（保留现有数据）</string>
+    <string name="import_append_desc">文件中的清单和待办将追加到末尾，现有数据不受影响。</string>
+    <string name="import_overwrite">覆盖导入（清空现有数据）</string>
+    <string name="import_overwrite_desc">用文件内容完全替换当前的清单与待办。</string>
+    <string name="overwrite_warning_title">此操作无法撤销</string>
+    <string name="overwrite_warning">覆盖导入将删除现有的 %1$d 个清单和 %2$d 项待办。</string>
+    <string name="export_before_import">先导出当前数据</string>
+    <string name="importing">正在导入…</string>
+    <string name="action_import">导入</string>
+    <string name="action_overwrite_import">覆盖导入</string>
+    <string name="unknown_error">未知错误</string>
+
+    <!-- 桌面小卡片 -->
     <string name="widget_label">待办清单</string>
     <string name="widget_description">常驻显示一个清单的未完成待办，可快捷新建和勾选完成</string>
     <string name="widget_preview_title">汇总</string>
@@ -9,4 +158,8 @@
     <string name="widget_add_task">新建待办</string>
     <string name="widget_mark_done">标记完成</string>
     <string name="widget_flagged">已插旗</string>
+    <plurals name="widget_count">
+        <item quantity="other">%d 项</item>
+    </plurals>
+    <string name="widget_pick_list_title">卡片显示的清单</string>
 </resources>

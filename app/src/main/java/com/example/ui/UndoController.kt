@@ -1,14 +1,17 @@
 package com.example.ui
 
+import androidx.annotation.StringRes
+import com.example.R
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import java.util.concurrent.atomic.AtomicLong
 
-enum class UndoActionType(val actionName: String) {
-    FLAG("已设为置顶"),
-    UNFLAG("已取消置顶"),
-    COMPLETE("任务已完成")
+/** 撤销提示的动作类型；[labelRes] 为提示中显示的动作文字（字符串资源）。 */
+enum class UndoActionType(@StringRes val labelRes: Int) {
+    FLAG(R.string.undo_flagged),
+    UNFLAG(R.string.undo_unflagged),
+    COMPLETE(R.string.undo_completed)
 }
 
 data class UndoRecord(

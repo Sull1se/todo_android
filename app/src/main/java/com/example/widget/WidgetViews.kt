@@ -8,16 +8,14 @@ import android.os.Build
 import android.view.View
 import android.widget.RemoteViews
 import androidx.annotation.ColorInt
+import androidx.annotation.ColorRes
 import androidx.annotation.DrawableRes
+import androidx.annotation.IdRes
 import androidx.core.widget.RemoteViewsCompat
 import com.example.R
 import com.example.ui.ThemeMode
+import kotlin.math.roundToInt
 
-/**
- * 应用强制浅色或深色时的卡片配色，与应用 Color.kt 一致。
- * 跟随系统时不设置颜色，交给布局中带夜间变体的颜色资源（res/values-night/widget_colors.xml），
- * 由桌面按自身昼夜状态解析。
- */
 data class WidgetColors(
     @DrawableRes val background: Int,
     @DrawableRes val addBackground: Int,
@@ -67,6 +65,10 @@ object WidgetViews {
     /** 宽度不足 4 列（约 250dp）时使用紧凑布局：隐藏计数；备注行不受宽度影响。 */
     const val WIDE_WIDTH_DP = 250
 
+    /** 与 widget_task_row / widget_task_row_body 布局中的上下内边距一致。 */
+    private const val ROW_PADDING_DP = 1f
+    private const val ROW_TEXT_PADDING_DP = 6f
+
     fun build(
         context: Context,
         appWidgetId: Int,
@@ -78,16 +80,24 @@ object WidgetViews {
         val isWide = (widthDp ?: 0) >= WIDE_WIDTH_DP
         val views = RemoteViews(context.packageName, R.layout.widget_todo)
 
+        // 桌面会复用旧视图，跟随系统也必须覆盖之前强制设置的配色。
+        views.setInt(android.R.id.background, "setBackgroundResource", colors?.background ?: R.drawable.widget_background)
+        views.setInt(R.id.widget_add, "setBackgroundResource", colors?.addBackground ?: R.drawable.widget_add_background)
         if (colors != null) {
-            views.setInt(android.R.id.background, "setBackgroundResource", colors.background)
-            views.setInt(R.id.widget_add, "setBackgroundResource", colors.addBackground)
             views.setInt(R.id.widget_add_icon, "setColorFilter", colors.addIcon)
             views.setTextColor(R.id.widget_title, colors.text)
             views.setTextColor(R.id.widget_count, colors.secondaryText)
             views.setTextColor(R.id.widget_empty, colors.secondaryText)
+        } else {
+            views.setColorResource(context, R.id.widget_add_icon, "setColorFilter", R.color.widget_add_icon)
+            views.setColorResource(context, R.id.widget_title, "setTextColor", R.color.widget_text)
+            views.setColorResource(context, R.id.widget_count, "setTextColor", R.color.widget_secondary_text)
+            views.setColorResource(context, R.id.widget_empty, "setTextColor", R.color.widget_secondary_text)
         }
 
-        views.setTextViewText(R.id.widget_title, content.title)
+        // 汇总标题按当前语言取资源，具体清单显示清单名
+        val title = if (content.listId == SUMMARY_LIST_ID) context.getString(R.string.summary) else content.title
+        views.setTextViewText(R.id.widget_title, title)
         val themeColor = content.themeColor
         if (themeColor != null) {
             views.setViewVisibility(R.id.widget_list_dot, View.VISIBLE)
@@ -97,7 +107,10 @@ object WidgetViews {
         }
         if (isWide) {
             views.setViewVisibility(R.id.widget_count, View.VISIBLE)
-            views.setTextViewText(R.id.widget_count, "${content.tasks.size} 项")
+            views.setTextViewText(
+                R.id.widget_count,
+                context.resources.getQuantityString(R.plurals.widget_count, content.tasks.size, content.tasks.size)
+            )
         } else {
             views.setViewVisibility(R.id.widget_count, View.GONE)
         }
@@ -119,8 +132,8 @@ object WidgetViews {
         val items = RemoteViewsCompat.RemoteCollectionItems.Builder()
             .setHasStableIds(true)
             .setViewTypeCount(1)
-        content.tasks.forEach { item ->
-            items.addItem(item.id.toLong(), taskRow(context, item, showListColor, colors))
+        content.tasks.forEachIndexed { index, item ->
+            items.addItem(item.id.toLong(), taskRow(context, item, showListColor, colors, isFirst = index == 0))
         }
         RemoteViewsCompat.setRemoteAdapter(context, views, appWidgetId, R.id.widget_task_list, items.build())
         return views
@@ -130,9 +143,16 @@ object WidgetViews {
         context: Context,
         item: WidgetTaskItem,
         showListColor: Boolean,
-        colors: WidgetColors?
+        colors: WidgetColors?,
+        isFirst: Boolean = false
     ): RemoteViews {
         val row = RemoteViews(context.packageName, R.layout.widget_task_row)
+        // 首行去掉顶部留白，缩小与标题栏的距离；行会被桌面复用，非首行也须显式恢复默认内边距
+        val density = context.resources.displayMetrics.density
+        val rowPadding = (ROW_PADDING_DP * density).roundToInt()
+        val textPadding = (ROW_TEXT_PADDING_DP * density).roundToInt()
+        row.setViewPadding(R.id.widget_row_root, 0, if (isFirst) 0 else rowPadding, 0, rowPadding)
+        row.setViewPadding(R.id.widget_row_text, 0, if (isFirst) 0 else textPadding, 0, textPadding)
         if (colors != null) {
             row.setTextColor(R.id.widget_row_title, colors.text)
             row.setTextColor(R.id.widget_row_notes, colors.secondaryText)
@@ -141,6 +161,15 @@ object WidgetViews {
                 row.setColorStateList(R.id.widget_row_check, "setButtonTintList", checkTint(colors))
             } else {
                 row.setInt(R.id.widget_row_check, "setColorFilter", colors.checkOutline)
+            }
+        } else {
+            row.setColorResource(context, R.id.widget_row_title, "setTextColor", R.color.widget_text)
+            row.setColorResource(context, R.id.widget_row_notes, "setTextColor", R.color.widget_secondary_text)
+            row.setColorResource(context, R.id.widget_row_flag, "setColorFilter", R.color.widget_flag)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                row.setColorStateList(R.id.widget_row_check, "setButtonTintList", R.color.widget_check_tint)
+            } else {
+                row.setColorResource(context, R.id.widget_row_check, "setColorFilter", R.color.widget_check_outline)
             }
         }
 
@@ -175,6 +204,14 @@ object WidgetViews {
             WidgetItemActions.fillIn(WidgetItemActions.ITEM_EDIT, item.id)
         )
         return row
+    }
+
+    private fun RemoteViews.setColorResource(context: Context, @IdRes viewId: Int, methodName: String, @ColorRes resource: Int) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            setColor(viewId, methodName, resource)
+        } else {
+            setInt(viewId, methodName, context.getColor(resource))
+        }
     }
 
     private fun checkTint(colors: WidgetColors) = ColorStateList(

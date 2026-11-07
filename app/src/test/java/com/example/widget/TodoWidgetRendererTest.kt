@@ -13,6 +13,7 @@ import androidx.test.core.app.ApplicationProvider
 import com.example.R
 import com.example.data.AppDatabase
 import com.example.data.TodoRepository
+import com.example.ui.ThemeMode
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -174,6 +175,31 @@ class TodoWidgetRendererTest {
         WidgetRenderer.renderAll(context)
         assertEquals(afterPlace + 1, WidgetRenderer.pushCount(id))
         assertTrue(widgetTexts(id).toString(), "暂无待办" in widgetTexts(id))
+    }
+
+    @Test
+    @Config(qualifiers = "night")
+    fun themeChanges_repaintCachedWidgetsWithoutDataChanges() = runBlocking {
+        val prefs = WidgetDataAccess.appPrefs(context)
+        prefs.edit().putString("appearance_mode", ThemeMode.SYSTEM.storageValue).commit()
+        val id = placeWidget(TodoWidgetReceiver::class.java)
+        awaitPlacementRender(id)
+
+        listOf(
+            ThemeMode.LIGHT to LightWidgetColors,
+            ThemeMode.SYSTEM to DarkWidgetColors,
+            ThemeMode.DARK to DarkWidgetColors,
+            ThemeMode.SYSTEM to DarkWidgetColors
+        ).forEach { (mode, palette) ->
+            val previousPushes = WidgetRenderer.pushCount(id)
+            prefs.edit().putString("appearance_mode", mode.storageValue).commit()
+            WidgetRenderer.renderAll(context, useCache = true)
+            shadowOf(Looper.getMainLooper()).idle()
+
+            assertTrue(WidgetRenderer.pushCount(id) > previousPushes)
+            assertEquals(palette.text, shadowManager.getViewFor(id).findViewById<TextView>(R.id.widget_title).currentTextColor)
+            assertFalse("暂无待办" in widgetTexts(id))
+        }
     }
 
     @Test

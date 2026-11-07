@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120" role="img" aria-labelledby="title">
+  <title id="title">Todo</title>
+  <rect width="120" height="120" rx="14" fill="#F0EEE6"/>
+  <path d="M57 18 C80 16 99 30 99.5 54 C100 79 86 100 61 101 C37 102 19 87 19.5 62 C20 38 34 20 57 18 Z" fill="#E6DFD1"/>
+  <g transform="rotate(-4 60 60)">
+    <rect x="31" y="27" width="64" height="74" rx="9" fill="#D97757"/>
+    <g stroke="#141413" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M30 22.5 Q58 21 85.5 22.2 Q90.3 22.6 90 27 Q90.8 60 89.6 91.5 Q89.5 96.2 85 96 Q57 97 30.5 95.6 Q26 95.4 26.2 91 Q25.4 58 26.4 26.6 Q26.8 22.3 30 22.5 Z" fill="#FAF9F5"/>
+      <g fill="none">
+        <path d="M37 34 Q42.5 33.4 48.2 34.3 Q48.8 40 48 45.6 Q42 46.3 36.6 45.4 Q35.9 39.5 37 34 Z"/>
+        <path d="M37 53 Q42.5 52.4 48.2 53.3 Q48.8 59 48 64.6 Q42 65.3 36.6 64.4 Q35.9 58.5 37 53 Z"/>
+        <path d="M37 72 Q42.5 71.4 48.2 72.3 Q48.8 78 48 83.6 Q42 84.3 36.6 83.4 Q35.9 77.5 37 72 Z"/>
+        <path d="M56 40.5 Q68 38.8 80.5 40" stroke="#B4B0A6"/>
+        <path d="M56 59 Q65 60.2 76 58.6"/>
+        <path d="M56 78.2 Q63 77 70 78"/>
+      </g>
+    </g>
+    <path d="M34.5 38.5 Q38.5 42.5 41.5 47.5 Q46.5 36 55 27.5" fill="none" stroke="#D97757" stroke-width="4.6" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>

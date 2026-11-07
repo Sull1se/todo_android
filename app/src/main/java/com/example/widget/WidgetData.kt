@@ -19,6 +19,7 @@ import com.example.ui.ThemeMode
 
 /** 汇总页标识，与应用 `selectedListId = -1` 一致。 */
 const val SUMMARY_LIST_ID = -1
+/** 汇总页在数据层的标题标记；界面显示时按语言取 R.string.summary。 */
 const val SUMMARY_TITLE = "汇总"
 
 data class WidgetTaskItem(
@@ -58,7 +59,7 @@ fun buildWidgetContent(lists: List<TaskList>, listId: Int, pageTasks: List<Task>
         tasks = pageTasks
             .filter { !it.isCompleted }
             .map {
-                // 合并格式清单与应用一致：显示信息跳过空行后的前两行
+                // 合并格式清单与应用一致：信息跳过空行，首行作标题，其余行作次要信息（卡片限 2 行）
                 val (title, content) = if (listMap[it.listId]?.contentMode == TaskContentMode.MERGED) {
                     TaskText.displayLines(it.title, it.content)
                 } else {

@@ -116,11 +116,11 @@ class CreateFlaggedViewportTest {
         pickListName: String? = null,
         currentListName: String = "请选择清单"
     ) {
-        composeTestRule.onNodeWithContentDescription("添加待办").performClick()
+        composeTestRule.onNodeWithContentDescription("新建待办").performClick()
         composeTestRule.waitForIdle()
         composeTestRule.onNodeWithText("标题").performTextInput(title)
         if (flagged) {
-            composeTestRule.onNodeWithContentDescription("插旗置顶").performClick()
+            composeTestRule.onNodeWithContentDescription("插旗").performClick()
         }
         if (pickListName != null) {
             // 清单 Tab 也显示同名文本，弹窗与下拉菜单节点在语义树中位于最后

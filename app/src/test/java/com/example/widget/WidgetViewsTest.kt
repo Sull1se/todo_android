@@ -2,9 +2,13 @@ package com.example.widget
 
 import android.content.Context
 import android.content.res.Configuration
+import android.graphics.PorterDuffColorFilter
+import android.graphics.drawable.GradientDrawable
+import android.graphics.drawable.InsetDrawable
 import android.view.View
 import android.widget.CheckBox
 import android.widget.FrameLayout
+import android.widget.ImageView
 import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.test.core.app.ApplicationProvider
@@ -16,6 +20,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 
 /** 卡片 RemoteViews 的内容与外观：在 Robolectric 中展开后检查各视图。 */
@@ -67,6 +72,20 @@ class WidgetViewsTest {
     }
 
     @Test
+    fun firstRow_dropsTopPadding_andReusedRowRestoresIt() {
+        val item = sampleContent.tasks[1]
+        val first = inflate(WidgetViews.taskRow(context, item, false, null, isFirst = true))
+        assertEquals(0, first.findViewById<View>(R.id.widget_row_root).paddingTop)
+        assertEquals(0, first.findViewById<View>(R.id.widget_row_text).paddingTop)
+
+        // 桌面复用首行视图显示其他行时，须恢复布局中的默认上内边距
+        WidgetViews.taskRow(context, item, false, null).reapply(context, first)
+        val density = context.resources.displayMetrics.density
+        assertEquals((1 * density).toInt(), first.findViewById<View>(R.id.widget_row_root).paddingTop)
+        assertEquals((6 * density).toInt(), first.findViewById<View>(R.id.widget_row_text).paddingTop)
+    }
+
+    @Test
     fun summary_hidesListDot() {
         val root = buildRoot(sampleContent.copy(listId = SUMMARY_LIST_ID, title = SUMMARY_TITLE, themeColor = null), 160)
 
@@ -101,6 +120,9 @@ class WidgetViewsTest {
 
         assertTrue(view.visible(R.id.widget_row_notes))
         assertEquals("任务备注", view.text(R.id.widget_row_notes))
+        // 3.5.0 起标题 1 行 + 次要信息最多 2 行，共 3 行
+        assertEquals(1, view.findViewById<TextView>(R.id.widget_row_title).maxLines)
+        assertEquals(2, view.findViewById<TextView>(R.id.widget_row_notes).maxLines)
         assertFalse(view.visible(R.id.widget_row_flag))
         assertTrue(view.visible(R.id.widget_row_bar))
     }
@@ -122,6 +144,74 @@ class WidgetViewsTest {
 
         val lightRow = row(sampleContent.tasks[0], colors = LightWidgetColors)
         assertEquals(LightWidgetColors.text, lightRow.findViewById<TextView>(R.id.widget_row_title).currentTextColor)
+    }
+
+    @Test
+    @Config(sdk = [30, 34], qualifiers = "night")
+    fun lightToSystem_reapplyRestoresNightColors() {
+        assertReappliedSystemTheme(ThemeMode.LIGHT, DarkWidgetColors)
+    }
+
+    @Test
+    @Config(sdk = [30, 34], qualifiers = "notnight")
+    fun darkToSystem_reapplyRestoresDayColors() {
+        assertReappliedSystemTheme(ThemeMode.DARK, LightWidgetColors)
+    }
+
+    @Test
+    fun systemTheme_resolvesColorsUsingHostConfiguration() {
+        val views = WidgetViews.build(context, 1, sampleContent, ThemeMode.SYSTEM, 320)
+        val taskViews = WidgetViews.taskRow(context, sampleContent.tasks[1], false, null)
+        listOf(false, true, false).forEach { night ->
+            val config = Configuration(context.resources.configuration).apply {
+                uiMode = (uiMode and Configuration.UI_MODE_NIGHT_MASK.inv()) or
+                    if (night) Configuration.UI_MODE_NIGHT_YES else Configuration.UI_MODE_NIGHT_NO
+            }
+            val host = context.createConfigurationContext(config)
+            val expected = if (night) DarkWidgetColors else LightWidgetColors
+            val root = views.apply(host, FrameLayout(host))
+            val task = taskViews.apply(host, FrameLayout(host))
+
+            assertEquals(expected.text, root.findViewById<TextView>(R.id.widget_title).currentTextColor)
+            assertEquals(host.getColor(R.color.widget_background), (root.background as GradientDrawable).color!!.defaultColor)
+            assertEquals(expected.text, task.findViewById<TextView>(R.id.widget_row_title).currentTextColor)
+            assertEquals(expected.checkOutline, task.findViewById<CheckBox>(R.id.widget_row_check).buttonTintList!!.defaultColor)
+            assertImageColor(root, R.id.widget_add_icon, expected.addIcon)
+        }
+    }
+
+    private fun assertReappliedSystemTheme(forcedMode: ThemeMode, expected: WidgetColors) {
+        val root = buildRoot(sampleContent, 320, forcedMode)
+        WidgetViews.build(context, 1, sampleContent, ThemeMode.SYSTEM, 320).reapply(context, root)
+
+        assertEquals(expected.text, root.findViewById<TextView>(R.id.widget_title).currentTextColor)
+        assertEquals(expected.secondaryText, root.findViewById<TextView>(R.id.widget_count).currentTextColor)
+        assertEquals(expected.secondaryText, root.findViewById<TextView>(R.id.widget_empty).currentTextColor)
+        assertEquals(context.getColor(R.color.widget_background), (root.background as GradientDrawable).color!!.defaultColor)
+        val addBackground = root.findViewById<View>(R.id.widget_add).background as InsetDrawable
+        assertEquals(context.getColor(R.color.widget_add_background), (addBackground.drawable as GradientDrawable).color!!.defaultColor)
+        assertImageColor(root, R.id.widget_add_icon, expected.addIcon)
+
+        val item = sampleContent.tasks[1]
+        val task = row(item, colors = widgetColors(forcedMode))
+        WidgetViews.taskRow(context, item, false, null).reapply(context, task)
+
+        assertEquals(expected.text, task.findViewById<TextView>(R.id.widget_row_title).currentTextColor)
+        assertEquals(expected.secondaryText, task.findViewById<TextView>(R.id.widget_row_notes).currentTextColor)
+        assertImageColor(task, R.id.widget_row_flag, expected.flag)
+        val check = task.findViewById<View>(R.id.widget_row_check)
+        if (check is CheckBox) {
+            assertEquals(expected.checkOutline, check.buttonTintList!!.defaultColor)
+            assertEquals(expected.checked, check.buttonTintList!!.getColorForState(intArrayOf(android.R.attr.state_checked), 0))
+            assertFalse(check.isChecked)
+        } else {
+            assertImageColor(task, R.id.widget_row_check, expected.checkOutline)
+        }
+    }
+
+    private fun assertImageColor(root: View, id: Int, expected: Int) {
+        val filter = root.findViewById<ImageView>(id).colorFilter as PorterDuffColorFilter
+        assertEquals(expected, shadowOf(filter).color)
     }
 
     @Test

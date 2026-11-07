@@ -19,12 +19,12 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.FilledTonalButton
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -36,9 +36,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.lifecycleScope
 import com.example.MainActivity
+import com.example.R
 import com.example.data.TaskList
 import com.example.ui.QuickAddTaskDialog
 import com.example.ui.ThemeMode
@@ -132,22 +135,29 @@ fun WidgetListPickerDialog(
     var selectedListId by rememberSaveable { mutableIntStateOf(initialListId) }
     val options = listOf<Pair<Int, Long?>>(SUMMARY_LIST_ID to null) + lists.map { it.id to it.themeColor }
     val names = lists.associate { it.id to it.name }
+    val summaryLabel = stringResource(R.string.summary)
 
     androidx.compose.material3.AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("卡片显示的清单") },
+        title = { Text(stringResource(R.string.widget_pick_list_title)) },
         text = {
-            LazyColumn(modifier = Modifier.heightIn(max = 360.dp)) {
+            LazyColumn(modifier = Modifier.heightIn(max = 360.dp).selectableGroup()) {
                 items(options, key = { it.first }) { (id, color) ->
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(8.dp))
-                            .clickable { selectedListId = id }
-                            .padding(vertical = 2.dp),
+                            .heightIn(min = 48.dp)
+                            .clip(MaterialTheme.shapes.small)
+                            .selectable(
+                                selected = selectedListId == id,
+                                role = Role.RadioButton,
+                                onClick = { selectedListId = id }
+                            )
+                            .padding(horizontal = 4.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        RadioButton(selected = selectedListId == id, onClick = { selectedListId = id })
+                        RadioButton(selected = selectedListId == id, onClick = null)
+                        Spacer(modifier = Modifier.width(12.dp))
                         if (color != null) {
                             Box(
                                 modifier = Modifier
@@ -158,7 +168,7 @@ fun WidgetListPickerDialog(
                             Spacer(modifier = Modifier.width(8.dp))
                         }
                         Text(
-                            text = if (id == SUMMARY_LIST_ID) SUMMARY_TITLE else names[id].orEmpty(),
+                            text = if (id == SUMMARY_LIST_ID) summaryLabel else names[id].orEmpty(),
                             style = MaterialTheme.typography.bodyLarge
                         )
                     }
@@ -166,13 +176,13 @@ fun WidgetListPickerDialog(
             }
         },
         confirmButton = {
-            Button(onClick = { onConfirm(selectedListId) }, shape = RoundedCornerShape(50)) {
-                Text("确定")
+            TextButton(onClick = { onConfirm(selectedListId) }) {
+                Text(stringResource(R.string.action_save))
             }
         },
         dismissButton = {
-            FilledTonalButton(onClick = onDismiss, shape = RoundedCornerShape(50)) {
-                Text("取消")
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.action_cancel))
             }
         }
     )

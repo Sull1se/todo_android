@@ -1,18 +1,29 @@
 package com.example.ui
 
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.AlertDialog
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -25,59 +36,19 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.navigation.NavBackStackEntry
-import kotlinx.coroutines.flow.first
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.ui.graphics.Color
+import com.example.R
 import com.example.data.Task
 import com.example.data.TaskContentMode
 import com.example.data.TaskText
-import com.example.ui.theme.FlagFilledIcon
-import com.example.ui.theme.FlagOutlinedIcon
-
-@Composable
-fun AddListDialog(
-    onDismiss: () -> Unit,
-    onConfirm: (String) -> Unit
-) {
-    var text by remember { mutableStateOf("") }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("新建列表") },
-        text = {
-            OutlinedTextField(
-                value = text,
-                onValueChange = { text = it },
-                label = { Text("列表名称") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth()
-            )
-        },
-        confirmButton = {
-            Button(
-                onClick = { if (text.isNotBlank()) onConfirm(text) },
-                enabled = text.isNotBlank()
-            ) {
-                Text("创建")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("取消")
-            }
-        }
-    )
-}
+import kotlinx.coroutines.flow.first
 
 sealed class DetailExitAction {
     data class Save(val taskId: Int, val title: String, val content: String, val isFlagged: Boolean) : DetailExitAction()
@@ -100,7 +71,8 @@ fun TaskDetailScreen(
     var isFlagged by rememberSaveable(taskId) { mutableStateOf(false) }
     var draftInitialized by rememberSaveable(taskId) { mutableStateOf(false) }
     var existingTask by remember(taskId) { mutableStateOf<Task?>(null) }
-    var showDeleteConfirm by remember { mutableStateOf(false) }
+    var showDeleteConfirm by rememberSaveable { mutableStateOf(false) }
+    var showDiscardConfirm by rememberSaveable { mutableStateOf(false) }
     var exitRequested by remember(backStackEntry) { mutableStateOf(false) }
 
     var lifecycleState by remember(backStackEntry) {
@@ -136,6 +108,28 @@ fun TaskDetailScreen(
     val isMerged = taskList?.contentMode == TaskContentMode.MERGED
     val hasText = if (isMerged) info.isNotBlank() else title.isNotBlank()
 
+    // 内容与打开时不同即视为有修改；关闭、系统返回都先确认“放弃修改？”（规范 4.4 决定 3）
+    val original = existingTask
+    val isDirty = draftInitialized && original != null && (
+        isFlagged != original.isFlagged ||
+            if (isMerged) {
+                info != TaskText.merge(original.title, original.content)
+            } else {
+                title != original.title || content != original.content
+            }
+        )
+    val requestClose: () -> Unit = {
+        if (isDirty) {
+            showDiscardConfirm = true
+        } else {
+            handleExit(DetailExitAction.Cancel)
+        }
+    }
+
+    BackHandler(enabled = isDirty && canInteract) {
+        showDiscardConfirm = true
+    }
+
     LaunchedEffect(taskId) {
         if (taskId != null) {
             val task = viewModel.getTaskById(taskId)
@@ -161,40 +155,36 @@ fun TaskDetailScreen(
     }
 
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text("编辑待办", fontWeight = FontWeight.Bold) },
+                title = { Text(stringResource(R.string.edit_task)) },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background
                 ),
                 navigationIcon = {
                     IconButton(
-                        onClick = { handleExit(DetailExitAction.Cancel) },
+                        onClick = { requestClose() },
                         enabled = canInteract
                     ) {
-                        Icon(Icons.Filled.Close, contentDescription = "取消")
+                        Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.action_cancel))
                     }
                 },
                 actions = {
                     // 底部已完成项禁止插旗
                     if (!isTaskInBottomCompleted) {
-                        IconButton(
-                            onClick = { isFlagged = !isFlagged },
-                            enabled = canEdit
-                        ) {
-                            Icon(
-                                imageVector = if (isFlagged) FlagFilledIcon else FlagOutlinedIcon,
-                                contentDescription = if (isFlagged) "取消插旗" else "插旗",
-                                tint = if (isFlagged) Color(0xFFE53935) else MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
+                        FlagToggleButton(isFlagged = isFlagged, onToggle = { isFlagged = !isFlagged }, enabled = canEdit)
                     }
                     if (taskId != null) {
                         IconButton(
                             onClick = { showDeleteConfirm = true },
                             enabled = canEdit
                         ) {
-                            Icon(Icons.Filled.Delete, contentDescription = "删除", tint = MaterialTheme.colorScheme.error)
+                            Icon(
+                                Icons.Filled.Delete,
+                                contentDescription = stringResource(R.string.action_delete),
+                                tint = MaterialTheme.colorScheme.error
+                            )
                         }
                     }
                     Button(
@@ -207,78 +197,90 @@ fun TaskDetailScreen(
                         enabled = canEdit && hasText,
                         modifier = Modifier.padding(end = 8.dp)
                     ) {
-                        Text("保存")
+                        Text(stringResource(R.string.action_save))
                     }
                 }
             )
         }
     ) { padding ->
-        Column(
+        BoxWithConstraints(
             modifier = Modifier
-                .fillMaxWidth()
+                .fillMaxSize()
                 .padding(padding)
-                .padding(16.dp)
+                .consumeWindowInsets(padding)
+                // 输入法弹出时内容区让出键盘高度，输入框保持可见（规范 7）
+                .imePadding()
         ) {
-            if (isMerged) {
-                OutlinedTextField(
-                    value = info,
-                    onValueChange = { info = it },
-                    label = { Text("信息") },
-                    enabled = canEdit,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f),
-                    textStyle = MaterialTheme.typography.bodyLarge
-                )
-            } else {
-                OutlinedTextField(
-                    value = title,
-                    onValueChange = { title = it },
-                    label = { Text("标题") },
-                    enabled = canEdit,
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    textStyle = MaterialTheme.typography.titleLarge
-                )
+            val horizontalPadding = pageHorizontalPadding(maxWidth)
+            Column(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .widthIn(max = ContentMaxWidth)
+                    .fillMaxWidth()
+                    .fillMaxSize()
+                    .padding(horizontal = horizontalPadding, vertical = 16.dp),
+                verticalArrangement = Arrangement.Top
+            ) {
+                if (isMerged) {
+                    OutlinedTextField(
+                        value = info,
+                        onValueChange = { info = it },
+                        label = { Text(stringResource(R.string.field_info)) },
+                        enabled = canEdit,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f),
+                        textStyle = MaterialTheme.typography.bodyLarge
+                    )
+                } else {
+                    OutlinedTextField(
+                        value = title,
+                        onValueChange = { title = it },
+                        label = { Text(stringResource(R.string.field_title)) },
+                        enabled = canEdit,
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                        textStyle = MaterialTheme.typography.titleLarge
+                    )
 
-                Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
 
-                OutlinedTextField(
-                    value = content,
-                    onValueChange = { content = it },
-                    label = { Text("详细信息") },
-                    enabled = canEdit,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f),
-                    textStyle = MaterialTheme.typography.bodyLarge
-                )
+                    OutlinedTextField(
+                        value = content,
+                        onValueChange = { content = it },
+                        label = { Text(stringResource(R.string.field_detail)) },
+                        enabled = canEdit,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f),
+                        textStyle = MaterialTheme.typography.bodyLarge
+                    )
+                }
             }
         }
 
         if (showDeleteConfirm) {
-            AlertDialog(
-                onDismissRequest = { showDeleteConfirm = false },
-                title = { Text("删除待办") },
-                text = { Text("确定要删除此待办事项吗？此操作无法撤销。") },
-                confirmButton = {
-                    Button(
-                        onClick = {
-                            showDeleteConfirm = false
-                            taskId?.let { handleExit(DetailExitAction.Delete(it)) }
-                        },
-                        enabled = canInteract
-                    ) {
-                        Text("删除")
-                    }
+            ConfirmDialog(
+                title = stringResource(R.string.delete_task_title),
+                message = stringResource(R.string.delete_task_message),
+                confirmLabel = stringResource(R.string.action_delete),
+                isDestructive = true,
+                enabled = canInteract,
+                onConfirm = {
+                    showDeleteConfirm = false
+                    taskId?.let { handleExit(DetailExitAction.Delete(it)) }
                 },
-                dismissButton = {
-                    TextButton(
-                        onClick = { showDeleteConfirm = false },
-                        enabled = canInteract
-                    ) {
-                        Text("取消")
-                    }
+                onDismiss = { showDeleteConfirm = false }
+            )
+        }
+
+        if (showDiscardConfirm) {
+            DiscardChangesDialog(
+                onKeepEditing = { showDiscardConfirm = false },
+                onDiscard = {
+                    showDiscardConfirm = false
+                    handleExit(DetailExitAction.Cancel)
                 }
             )
         }

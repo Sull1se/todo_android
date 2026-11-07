@@ -1,30 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  自适应图标前景：由项目根目录 todo.svg（120×120）转换。图形整体缩放 0.66 并居中，
+  使便签四角落在 66dp 安全区内，圆形、方形等各种桌面遮罩都不会裁到主体。
+-->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <path android:pathData="M31,63.928c0,0 6.4,-11 12.1,-13.1c7.2,-2.6 26,-1.4 26,-1.4l38.1,38.1L107,108.928l-32,-1L31,63.928z">
-        <aapt:attr name="android:fillColor">
-            <gradient
-                android:endX="85.84757"
-                android:endY="92.4963"
-                android:startX="42.9492"
-                android:startY="49.59793"
-                android:type="linear">
-                <item
-                    android:color="#44000000"
-                    android:offset="0.0" />
-                <item
-                    android:color="#00000000"
-                    android:offset="1.0" />
-            </gradient>
-        </aapt:attr>
-    </path>
-    <path
-        android:fillColor="#FFFFFF"
-        android:fillType="nonZero"
-        android:pathData="M65.3,45.828l3.8,-6.6c0.2,-0.4 0.1,-0.9 -0.3,-1.1c-0.4,-0.2 -0.9,-0.1 -1.1,0.3l-3.9,6.7c-6.3,-2.8 -13.4,-2.8 -19.7,0l-3.9,-6.7c-0.2,-0.4 -0.7,-0.5 -1.1,-0.3C38.8,38.328 38.7,38.828 38.9,39.228l3.8,6.6C36.2,49.428 31.7,56.028 31,63.928h46C76.3,56.028 71.8,49.428 65.3,45.828zM43.4,57.328c-0.8,0 -1.5,-0.5 -1.8,-1.2c-0.3,-0.7 -0.1,-1.5 0.4,-2.1c0.5,-0.5 1.4,-0.7 2.1,-0.4c0.7,0.3 1.2,1 1.2,1.8C45.3,56.528 44.5,57.328 43.4,57.328L43.4,57.328zM64.6,57.328c-0.8,0 -1.5,-0.5 -1.8,-1.2s-0.1,-1.5 0.4,-2.1c0.5,-0.5 1.4,-0.7 2.1,-0.4c0.7,0.3 1.2,1 1.2,1.8C66.5,56.528 65.6,57.328 64.6,57.328L64.6,57.328z"
-        android:strokeWidth="1"
-        android:strokeColor="#00000000" />
+    <group
+        android:scaleX="0.66"
+        android:scaleY="0.66"
+        android:translateX="14.4"
+        android:translateY="14.4">
+        <path
+            android:fillColor="#FFE6DFD1"
+            android:pathData="M57,18 C80,16 99,30 99.5,54 C100,79 86,100 61,101 C37,102 19,87 19.5,62 C20,38 34,20 57,18 Z" />
+        <group
+            android:pivotX="60"
+            android:pivotY="60"
+            android:rotation="-4">
+            <path
+                android:fillColor="#FFD97757"
+                android:pathData="M40,27 H86 A9,9 0 0 1 95,36 V92 A9,9 0 0 1 86,101 H40 A9,9 0 0 1 31,92 V36 A9,9 0 0 1 40,27 Z" />
+            <path
+                android:fillColor="#FFFAF9F5"
+                android:strokeColor="#FF141413"
+                android:strokeWidth="3.4"
+                android:strokeLineCap="round"
+                android:strokeLineJoin="round"
+                android:pathData="M30,22.5 Q58,21 85.5,22.2 Q90.3,22.6 90,27 Q90.8,60 89.6,91.5 Q89.5,96.2 85,96 Q57,97 30.5,95.6 Q26,95.4 26.2,91 Q25.4,58 26.4,26.6 Q26.8,22.3 30,22.5 Z" />
+            <path
+                android:strokeColor="#FF141413"
+                android:strokeWidth="3.4"
+                android:strokeLineCap="round"
+                android:strokeLineJoin="round"
+                android:pathData="M37,34 Q42.5,33.4 48.2,34.3 Q48.8,40 48,45.6 Q42,46.3 36.6,45.4 Q35.9,39.5 37,34 Z M37,53 Q42.5,52.4 48.2,53.3 Q48.8,59 48,64.6 Q42,65.3 36.6,64.4 Q35.9,58.5 37,53 Z M37,72 Q42.5,71.4 48.2,72.3 Q48.8,78 48,83.6 Q42,84.3 36.6,83.4 Q35.9,77.5 37,72 Z" />
+            <path
+                android:strokeColor="#FFB4B0A6"
+                android:strokeWidth="3.4"
+                android:strokeLineCap="round"
+                android:strokeLineJoin="round"
+                android:pathData="M56,40.5 Q68,38.8 80.5,40" />
+            <path
+                android:strokeColor="#FF141413"
+                android:strokeWidth="3.4"
+                android:strokeLineCap="round"
+                android:strokeLineJoin="round"
+                android:pathData="M56,59 Q65,60.2 76,58.6 M56,78.2 Q63,77 70,78" />
+            <path
+                android:strokeColor="#FFD97757"
+                android:strokeWidth="4.6"
+                android:strokeLineCap="round"
+                android:strokeLineJoin="round"
+                android:pathData="M34.5,38.5 Q38.5,42.5 41.5,47.5 Q46.5,36 55,27.5" />
+        </group>
+    </group>
 </vector>

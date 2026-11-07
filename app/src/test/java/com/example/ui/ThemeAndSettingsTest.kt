@@ -16,18 +16,24 @@ import androidx.test.core.app.ApplicationProvider
 import com.example.TodoApp
 import com.example.data.AppDatabase
 import com.example.data.TodoRepository
+import androidx.compose.material3.ColorScheme
+import androidx.compose.material3.lightColorScheme
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.ui.graphics.luminance
 import com.example.ui.theme.DarkColorScheme
-import com.example.ui.theme.DarkOledBackground
 import com.example.ui.theme.DarkPrimaryContainer
 import com.example.ui.theme.DarkOnPrimaryContainer
+import com.example.ui.theme.DarkTodoColors
 import com.example.ui.theme.LightColorScheme
-import com.example.ui.theme.TabActiveBg
-import com.example.ui.theme.TabActiveText
+import com.example.ui.theme.LightPrimaryContainer
+import com.example.ui.theme.LightOnPrimaryContainer
+import com.example.ui.theme.LightTodoColors
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -121,7 +127,10 @@ class ThemeAndSettingsTest {
         }
         composeTestRule.waitForIdle()
 
-        // 1. 验证清单设置按钮存在且无障碍描述为 "清单设置"
+        // 1. 齿轮按钮的无障碍描述按其打开的弹窗区分：汇总页为“汇总设置”，清单页为“清单设置”（3.5.0，规范第 6 节）
+        composeTestRule.onNodeWithContentDescription("汇总设置").assertIsDisplayed()
+        composeTestRule.onNodeWithText("生活清单").performClick()
+        composeTestRule.waitForIdle()
         composeTestRule.onNodeWithContentDescription("清单设置").assertIsDisplayed()
 
         // 2. 打开右上角 "应用设置"
@@ -146,7 +155,7 @@ class ThemeAndSettingsTest {
 
         // 验证数据管理对话框打开
         composeTestRule.onNodeWithText("数据管理").assertIsDisplayed()
-        composeTestRule.onNodeWithText("导出全部数据 (JSON)").assertIsDisplayed()
+        composeTestRule.onNodeWithText("导出全部数据（JSON）").assertIsDisplayed()
         composeTestRule.onNodeWithText("从 JSON 文件导入").assertIsDisplayed()
 
         // 5. 关闭数据管理对话框
@@ -169,24 +178,87 @@ class ThemeAndSettingsTest {
     }
 
     // T603: 色值与可读性核查
+    // 3.5.0 按 UI 与 UX 规范 3.1 调整：深色 background 与 surface 均为 OLED 纯黑，层级改由
+    // surfaceContainer* 深灰色阶与任务卡片扩展令牌表达；同时校验所有 M3 角色均已显式定义、完成态文字对比度达标。
     @Test
     fun t603_colorValuesAndOledBlack() {
-        // 1. 深色模式 background 必须为 OLED 纯黑 #000000
+        // 1. 深色模式 background / surface 必须为 OLED 纯黑 #000000
         assertEquals(Color(0xFF000000), DarkColorScheme.background)
-        assertEquals(Color(0xFF000000), DarkOledBackground)
+        assertEquals(Color(0xFF000000), DarkColorScheme.surface)
 
-        // 2. 深色 surface 与 background 区分层级
-        assertNotEquals(DarkColorScheme.background, DarkColorScheme.surface)
-        assertEquals(Color(0xFF161616), DarkColorScheme.surface)
+        // 2. 深色任务卡片与容器层级与纯黑背景区分（OLED 灰阶）
+        assertEquals(Color(0xFF161616), DarkTodoColors.card)
+        assertEquals(DarkColorScheme.surfaceContainerLow, DarkTodoColors.card)
+        assertNotEquals(DarkColorScheme.background, DarkColorScheme.surfaceContainerLow)
+        val darkLevels = listOf(
+            DarkColorScheme.surfaceContainerLow,
+            DarkColorScheme.surfaceContainer,
+            DarkColorScheme.surfaceContainerHigh,
+            DarkColorScheme.surfaceContainerHighest
+        ).map { it.luminance() }
+        assertEquals("深色容器色阶应逐级变亮", darkLevels.sorted(), darkLevels)
 
         // 3. Tab 配对色值检查
-        assertEquals(TabActiveBg, LightColorScheme.primaryContainer)
-        assertEquals(TabActiveText, LightColorScheme.onPrimaryContainer)
+        assertEquals(LightPrimaryContainer, LightColorScheme.primaryContainer)
+        assertEquals(LightOnPrimaryContainer, LightColorScheme.onPrimaryContainer)
+        assertEquals(Color(0xFFD3E3FD), LightColorScheme.primaryContainer)
+        assertEquals(Color(0xFF041E49), LightColorScheme.onPrimaryContainer)
         assertEquals(DarkPrimaryContainer, DarkColorScheme.primaryContainer)
         assertEquals(DarkOnPrimaryContainer, DarkColorScheme.onPrimaryContainer)
 
         // 4. 浅色模式保持规范主色
         assertEquals(Color(0xFF0B57D0), LightColorScheme.primary)
         assertEquals(Color.White, LightColorScheme.onPrimary)
+    }
+
+    // T604: 组件实际使用的角色都已显式定义，不回退到 M3 基线紫色（UX-01）
+    @Test
+    fun t604_allColorRolesOverrideBaseline() {
+        fun roles(scheme: ColorScheme) = mapOf(
+            "secondary" to scheme.secondary,
+            "secondaryContainer" to scheme.secondaryContainer,
+            "tertiary" to scheme.tertiary,
+            "tertiaryContainer" to scheme.tertiaryContainer,
+            "inversePrimary" to scheme.inversePrimary,
+            "outlineVariant" to scheme.outlineVariant,
+            "surfaceVariant" to scheme.surfaceVariant,
+            "surfaceContainerLowest" to scheme.surfaceContainerLowest,
+            "surfaceContainerLow" to scheme.surfaceContainerLow,
+            "surfaceContainer" to scheme.surfaceContainer,
+            "surfaceContainerHigh" to scheme.surfaceContainerHigh,
+            "surfaceContainerHighest" to scheme.surfaceContainerHighest,
+            "surfaceDim" to scheme.surfaceDim,
+            "surfaceBright" to scheme.surfaceBright,
+            "surfaceTint" to scheme.surfaceTint
+        )
+        val lightBaseline = roles(lightColorScheme())
+        val darkBaseline = roles(darkColorScheme())
+        roles(LightColorScheme).forEach { (name, color) ->
+            // 浅色最低层容器为纯白，与基线相同但属于中性色，不带紫色调
+            if (name == "surfaceContainerLowest") return@forEach
+            assertNotEquals("浅色 $name 仍为 M3 基线值", lightBaseline.getValue(name), color)
+        }
+        roles(DarkColorScheme).forEach { (name, color) ->
+            assertNotEquals("深色 $name 仍为 M3 基线值", darkBaseline.getValue(name), color)
+        }
+        // 撤销提示操作色取 inversePrimary，必须为品牌蓝色阶而非基线紫色
+        assertEquals(Color(0xFFA8C7FA), LightColorScheme.inversePrimary)
+        assertEquals(Color(0xFF0B57D0), DarkColorScheme.inversePrimary)
+    }
+
+    // T605: 完成态文字与左滑提示文字对比度 ≥ 4.5:1（UX-03）
+    @Test
+    fun t605_textContrastMeetsWcagAa() {
+        fun contrast(a: Color, b: Color): Double {
+            val la = a.luminance() + 0.05
+            val lb = b.luminance() + 0.05
+            return (maxOf(la, lb) / minOf(la, lb)).toDouble()
+        }
+        assertTrue(contrast(LightTodoColors.completedText, LightTodoColors.card) >= 4.5)
+        assertTrue(contrast(DarkTodoColors.completedText, DarkTodoColors.card) >= 4.5)
+        assertTrue(contrast(LightTodoColors.onSwipeFlagContainer, LightTodoColors.swipeFlagContainer) >= 4.5)
+        assertTrue(contrast(DarkTodoColors.onSwipeFlagContainer, DarkTodoColors.swipeFlagContainer) >= 4.5)
+        assertTrue(contrast(LightColorScheme.onSurfaceVariant, LightTodoColors.card) >= 4.5)
+        assertTrue(contrast(DarkColorScheme.onSurfaceVariant, DarkTodoColors.card) >= 4.5)
     }
 }

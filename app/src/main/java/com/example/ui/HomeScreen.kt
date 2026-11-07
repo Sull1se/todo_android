@@ -1,145 +1,183 @@
 package com.example.ui
 
-import androidx.compose.ui.unit.IntOffset
-import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.material3.SnackbarData
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.foundation.layout.offset
+import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.interaction.DragInteraction
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.TextButton
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.List
-import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowRight
+import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material3.BottomAppBar
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuAnchorType
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarData
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.minimumInteractiveComponentSize
+import androidx.compose.material3.rememberSwipeToDismissBoxState
+import androidx.compose.material3.ripple
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.hapticfeedback.HapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.R
+import com.example.data.Task
+import com.example.data.TaskContentMode
+import com.example.data.TaskList
+import com.example.data.TaskText
 import com.example.data.transfer.BackupData
 import com.example.data.transfer.DataTransferManager
+import com.example.data.transfer.JsonBackupCodec
 import com.example.ui.components.DataManagementDialog
 import com.example.ui.components.ImportPreviewDialog
 import com.example.ui.components.UndoMessageHost
-import androidx.compose.material3.RadioButton
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.HorizontalDivider
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.ui.theme.FlagFilledIcon
+import com.example.ui.theme.FlagOutlinedIcon
+import com.example.ui.theme.ListColorFallback
+import com.example.ui.theme.ListThemePalette
+import com.example.ui.theme.TodoTheme
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import sh.calvin.reorderable.ReorderableItem
+import sh.calvin.reorderable.ReorderableLazyListState
+import sh.calvin.reorderable.rememberReorderableLazyListState
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Divider
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.ListItem
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.SwipeToDismissBox
-import androidx.compose.material3.SwipeToDismissBoxValue
-import androidx.compose.material3.rememberSwipeToDismissBoxState
-import com.example.ui.theme.FlagFilledIcon
-import com.example.ui.theme.FlagOutlinedIcon
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.zIndex
-import com.example.data.Task
-import androidx.compose.material3.BottomAppBar
-import androidx.compose.material3.Button
-import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material.icons.filled.Place
-import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.filled.Done
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
-import androidx.compose.ui.unit.sp
-import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import com.example.data.TaskContentMode
-import com.example.data.TaskList
-import com.example.data.TaskText
-import com.example.data.TaskOrderEngine
-import com.example.ui.components.UndoMessageHost
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.ui.draw.shadow
-import sh.calvin.reorderable.ReorderableItem
-import sh.calvin.reorderable.rememberReorderableLazyListState
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.flow.first
-import androidx.compose.foundation.interaction.DragInteraction
-import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.SideEffect
-import androidx.compose.runtime.snapshotFlow
-import androidx.compose.ui.hapticfeedback.HapticFeedback
-import androidx.compose.ui.layout.onGloballyPositioned
-import sh.calvin.reorderable.ReorderableLazyListState
+
+/** 中等及以上窗口（≥ 600dp）的判断阈值、页面边距与内容最大宽度（UI 与 UX 规范 3.4、7）。 */
+internal val MediumWindowWidth = 600.dp
+internal val ContentMaxWidth = 840.dp
+internal fun pageHorizontalPadding(windowWidth: androidx.compose.ui.unit.Dp) =
+    if (windowWidth >= MediumWindowWidth) 24.dp else 16.dp
+
+/** 清单可选主题色的名称（与 [ListThemePalette] 一一对应），供读屏播报。 */
+private val ListThemeColorNames = listOf(
+    R.string.color_red, R.string.color_blue, R.string.color_green,
+    R.string.color_amber, R.string.color_purple, R.string.color_cyan
+)
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -160,6 +198,7 @@ fun HomeScreen(
 
     var showCompleted by rememberSaveable { mutableStateOf(false) }
     var showCleanCompletedDialog by rememberSaveable { mutableStateOf(false) }
+    var showDeleteSelectedDialog by rememberSaveable { mutableStateOf(false) }
 
     var showAddListDialog by rememberSaveable { mutableStateOf(false) }
     var listSettingsDialogId by rememberSaveable { mutableStateOf<Int?>(null) }
@@ -170,13 +209,16 @@ fun HomeScreen(
     val transferManager = remember(context) { DataTransferManager(context) }
     var showAppSettingsDialog by rememberSaveable { mutableStateOf(false) }
     var showDataManagementDialog by rememberSaveable { mutableStateOf(false) }
+    // 导入预览：临时文件路径与现有数量可在旋转、分屏或进程重建后恢复，预览数据据此重新解析
+    var previewTempPath by rememberSaveable { mutableStateOf<String?>(null) }
     var previewBackupData by remember { mutableStateOf<BackupData?>(null) }
-    var previewTempFile by remember { mutableStateOf<File?>(null) }
-    var existingCounts by remember { mutableStateOf(Pair(0, 0)) }
+    var existingListCount by rememberSaveable { mutableStateOf(0) }
+    var existingTaskCount by rememberSaveable { mutableStateOf(0) }
     var isImporting by remember { mutableStateOf(false) }
+    val previewTempFile = previewTempPath?.let { File(it) }
 
-    val snackbarHostState = remember { androidx.compose.material3.SnackbarHostState() }
-    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
     val hapticFeedback = LocalHapticFeedback.current
 
     val listState = rememberLazyListState()
@@ -227,14 +269,31 @@ fun HomeScreen(
         }
     }
 
+    // 进程重建后按保存的临时文件路径恢复导入预览；文件已不存在时放弃预览
+    LaunchedEffect(previewTempPath) {
+        val path = previewTempPath
+        if (path != null && previewBackupData == null) {
+            val restored = withContext(Dispatchers.IO) {
+                runCatching { JsonBackupCodec.readBackup(File(path)) }.getOrNull()
+            }
+            if (restored != null) {
+                previewBackupData = restored
+            } else {
+                transferManager.cleanTempFile(File(path))
+                previewTempPath = null
+            }
+        }
+    }
+
     val isAnyDialogOpen = showAddListDialog ||
         showMoveTasksDialog ||
         showQuickAddTaskDialog ||
         listSettingsDialogId != null ||
         showAppSettingsDialog ||
         showDataManagementDialog ||
-        previewBackupData != null ||
-        showCleanCompletedDialog
+        previewTempPath != null ||
+        showCleanCompletedDialog ||
+        showDeleteSelectedDialog
 
     LaunchedEffect(isAnyDialogOpen) {
         if (isAnyDialogOpen) {
@@ -250,12 +309,17 @@ fun HomeScreen(
         }
     }
 
+    // 系统返回先退出多选（规范第 5 节返回优先级），对话框由各自的窗口处理返回
+    BackHandler(enabled = isSelectionMode) {
+        viewModel.exitSelectionMode()
+    }
+
     val exportLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/json")
     ) { uri ->
         if (uri != null) {
             scope.launch {
-                try {
+                val message = try {
                     val versionName = try {
                         context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "1.5.0"
                     } catch (_: Throwable) {
@@ -264,14 +328,14 @@ fun HomeScreen(
                     val backup = viewModel.exportBackup(versionName)
                     val result = transferManager.exportToUri(backup, uri)
                     if (result.isSuccess) {
-                        snackbarHostState.showSnackbar("已成功导出 ${backup.lists.size} 个清单，${backup.tasks.size} 个待办")
+                        context.getString(R.string.export_success, backup.lists.size, backup.tasks.size)
                     } else {
-                        val err = result.exceptionOrNull()?.message ?: "导出失败"
-                        snackbarHostState.showSnackbar("导出失败: $err")
+                        context.getString(R.string.export_failed, result.exceptionOrNull().reason(context))
                     }
                 } catch (e: Exception) {
-                    snackbarHostState.showSnackbar("导出失败: ${e.message}")
+                    context.getString(R.string.export_failed, e.reason(context))
                 }
+                snackbarHostState.showSnackbar(message)
             }
         }
     }
@@ -279,6 +343,12 @@ fun HomeScreen(
     val triggerExport = {
         val timestamp = SimpleDateFormat("yyyyMMdd-HHmmss", Locale.getDefault()).format(Date())
         exportLauncher.launch("todo-backup-$timestamp.json")
+    }
+
+    fun clearPreview() {
+        transferManager.cleanTempFile(previewTempFile)
+        previewBackupData = null
+        previewTempPath = null
     }
 
     val importLauncher = rememberLauncherForActivityResult(
@@ -290,21 +360,20 @@ fun HomeScreen(
                     val result = transferManager.readAndValidateFromUri(uri)
                     if (result.isSuccess) {
                         val (backup, tempFile) = result.getOrThrow()
+                        val (listCount, taskCount) = viewModel.getCurrentDataCounts()
+                        existingListCount = listCount
+                        existingTaskCount = taskCount
                         previewBackupData = backup
-                        previewTempFile = tempFile
-                        existingCounts = viewModel.getCurrentDataCounts()
+                        previewTempPath = tempFile.absolutePath
                     } else {
-                        transferManager.cleanTempFile(previewTempFile)
-                        previewBackupData = null
-                        previewTempFile = null
-                        val err = result.exceptionOrNull()?.message ?: "文件解析校验失败"
-                        snackbarHostState.showSnackbar("导入校验失败: $err")
+                        clearPreview()
+                        snackbarHostState.showSnackbar(
+                            context.getString(R.string.import_invalid, result.exceptionOrNull().reason(context))
+                        )
                     }
                 } catch (e: Exception) {
-                    transferManager.cleanTempFile(previewTempFile)
-                    previewBackupData = null
-                    previewTempFile = null
-                    snackbarHostState.showSnackbar("导入校验失败: ${e.message}")
+                    clearPreview()
+                    snackbarHostState.showSnackbar(context.getString(R.string.import_invalid, e.reason(context)))
                 }
             }
         }
@@ -321,8 +390,9 @@ fun HomeScreen(
     }
 
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
         snackbarHost = {
-            androidx.compose.material3.SnackbarHost(hostState = snackbarHostState) { data ->
+            SnackbarHost(hostState = snackbarHostState) { data ->
                 SwipeableSnackbar(data)
             }
         },
@@ -330,10 +400,12 @@ fun HomeScreen(
             Column {
                 if (isSelectionMode) {
                     TopAppBar(
-                        title = { Text("已选择 ${selectedTaskIds.size} 项", fontWeight = FontWeight.Medium) },
+                        title = {
+                            Text(pluralStringResource(R.plurals.selected_count, selectedTaskIds.size, selectedTaskIds.size))
+                        },
                         navigationIcon = {
                             TextButton(onClick = { viewModel.exitSelectionMode() }) {
-                                Text("退出", fontWeight = FontWeight.Medium)
+                                Text(stringResource(R.string.action_exit))
                             }
                         },
                         actions = {
@@ -341,130 +413,39 @@ fun HomeScreen(
                                 (displayTasks + completedTasks).map { it.id }
                             }
                             TextButton(onClick = { viewModel.selectAllTasks(allCurrentPageTaskIds) }) {
-                                Text("全选", fontWeight = FontWeight.Medium)
+                                Text(stringResource(R.string.action_select_all))
                             }
                         },
                         colors = TopAppBarDefaults.topAppBarColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                            titleContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                            actionIconContentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                            titleContentColor = MaterialTheme.colorScheme.onSurface
                         )
                     )
                 } else {
                     TopAppBar(
-                        title = { Text("Todo", fontWeight = FontWeight.Bold) },
+                        title = { Text(stringResource(R.string.app_name)) },
                         colors = TopAppBarDefaults.topAppBarColors(
                             containerColor = MaterialTheme.colorScheme.background,
                             titleContentColor = MaterialTheme.colorScheme.onBackground
                         ),
                         actions = {
                             IconButton(onClick = { showAppSettingsDialog = true }) {
-                                Icon(Icons.Filled.MoreVert, contentDescription = "应用设置")
+                                Icon(Icons.Filled.MoreVert, contentDescription = stringResource(R.string.app_settings))
                             }
                         }
                     )
                 }
 
-                val tabs = remember(lists) {
-                    buildList {
-                        add(Pair(-1, "汇总"))
-                        lists?.forEach { add(Pair(it.id, it.name)) }
-                        add(Pair(-2, "+ 新建列表"))
-                    }
-                }
-
-                val selectedTabIndex = tabs.indexOfFirst { it.first == selectedListId }.takeIf { it >= 0 } ?: 0
-
-                val tabsState = rememberLazyListState()
-                val reorderableTabsState = rememberReorderableLazyListState(tabsState) { from, to ->
-                    val fromKey = from.key as? Int ?: return@rememberReorderableLazyListState
-                    val toKey = to.key as? Int ?: return@rememberReorderableLazyListState
-                    if (fromKey <= 0 || toKey <= 0) return@rememberReorderableLazyListState
-                    val currentLists = lists ?: return@rememberReorderableLazyListState
-                    val fromListIndex = currentLists.indexOfFirst { it.id == fromKey }
-                    val toListIndex = currentLists.indexOfFirst { it.id == toKey }
-                    if (fromListIndex >= 0 && toListIndex >= 0 && fromListIndex != toListIndex) {
-                        viewModel.reorderLists(fromListIndex, toListIndex)
-                    }
-                }
-
-                LazyRow(
-                    state = tabsState,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    itemsIndexed(tabs, key = { _, tab -> tab.first }) { index, tab ->
-                        val isSelected = selectedTabIndex == index
-                        val bgColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface
-                        val contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
-                        val borderColor = if (isSelected) Color.Transparent else MaterialTheme.colorScheme.outline
-                        val isDragEnabled = tab.first > 0
-
-                        ReorderableItem(
-                            state = reorderableTabsState,
-                            key = tab.first,
-                            enabled = isDragEnabled
-                        ) { isDragging ->
-                            val elevation by animateDpAsState(if (isDragging) 6.dp else 0.dp, label = "tabElevation")
-                            val scale by animateFloatAsState(if (isDragging) 1.05f else 1.0f, label = "tabScale")
-                            val itemAlpha by animateFloatAsState(if (isDragging) 0.95f else 1.0f, label = "tabAlpha")
-
-                            val dragModifier = if (isDragging) {
-                                Modifier
-                                    .shadow(elevation, shape = RoundedCornerShape(percent = 50))
-                                    .graphicsLayer {
-                                        scaleX = scale
-                                        scaleY = scale
-                                        alpha = itemAlpha
-                                    }
-                            } else {
-                                Modifier
-                            }
-
-                            Box(
-                                modifier = Modifier
-                                    .then(dragModifier)
-                                    .longPressDraggableHandle(
-                                        enabled = isDragEnabled,
-                                        onDragStarted = {
-                                            hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-                                        },
-                                        onDragStopped = {
-                                            viewModel.saveListOrder()
-                                        }
-                                    )
-                                    .clip(RoundedCornerShape(percent = 50))
-                                    .background(bgColor)
-                                    .border(1.dp, borderColor, RoundedCornerShape(percent = 50))
-                                    .clickable(
-                                        onClick = {
-                                            if (tab.first == -2) {
-                                                showAddListDialog = true
-                                            } else {
-                                                viewModel.selectList(tab.first)
-                                            }
-                                        }
-                                    )
-                                    .padding(horizontal = 20.dp, vertical = 10.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                if (tab.first == -2) {
-                                    Icon(Icons.Filled.Add, contentDescription = "新建列表", tint = contentColor, modifier = Modifier.size(20.dp))
-                                } else {
-                                    Text(
-                                        text = tab.second,
-                                        color = contentColor,
-                                        fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
-                                        fontSize = MaterialTheme.typography.labelLarge.fontSize
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-                Divider(color = MaterialTheme.colorScheme.outlineVariant, thickness = 1.dp)
+                ListTabsRow(
+                    lists = lists,
+                    selectedListId = selectedListId,
+                    hapticFeedback = hapticFeedback,
+                    onSelectList = { viewModel.selectList(it) },
+                    onAddList = { showAddListDialog = true },
+                    onReorderLists = { from, to -> viewModel.reorderLists(from, to) },
+                    onSaveListOrder = { viewModel.saveListOrder() }
+                )
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             }
         },
         floatingActionButton = {
@@ -473,9 +454,9 @@ fun HomeScreen(
                     onClick = { showQuickAddTaskDialog = true },
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                    shape = RoundedCornerShape(16.dp)
+                    shape = MaterialTheme.shapes.large
                 ) {
-                    Icon(Icons.Filled.Add, "添加待办", modifier = Modifier.size(28.dp))
+                    Icon(Icons.Filled.Add, stringResource(R.string.new_task), modifier = Modifier.size(28.dp))
                 }
             }
         },
@@ -485,75 +466,34 @@ fun HomeScreen(
                 enter = slideInVertically(initialOffsetY = { it }),
                 exit = slideOutVertically(targetOffsetY = { it })
             ) {
-                var showDeleteConfirmDialog by remember { mutableStateOf(false) }
-                if (showDeleteConfirmDialog) {
-                    androidx.compose.material3.AlertDialog(
-                        onDismissRequest = { showDeleteConfirmDialog = false },
-                        title = { Text("确认删除") },
-                        text = { Text("是否确定删除所选的 ${selectedTaskIds.size} 个待办事项？") },
-                        confirmButton = {
-                            Button(
-                                onClick = {
-                                    viewModel.deleteSelectedTasks()
-                                    showDeleteConfirmDialog = false
-                                },
-                                colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
-                            ) {
-                                Text("删除")
-                            }
-                        },
-                        dismissButton = {
-                            androidx.compose.material3.TextButton(onClick = { showDeleteConfirmDialog = false }) { Text("取消") }
-                        }
-                    )
-                }
-
+                val hasSelection = selectedTaskIds.isNotEmpty()
                 BottomAppBar(
                     actions = {
-                        Column(
-                            modifier = Modifier
-                                .weight(1f)
-                                .clickable { viewModel.markSelectedTasksStatus(true) }
-                                .padding(vertical = 8.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center
-                        ) {
-                            Icon(Icons.Filled.CheckCircle, contentDescription = "标为完成")
-                            Text("标记完成", fontSize = 10.sp)
-                        }
-                        Column(
-                            modifier = Modifier
-                                .weight(1f)
-                                .clickable { viewModel.markSelectedTasksStatus(false) }
-                                .padding(vertical = 8.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center
-                        ) {
-                            Icon(Icons.Filled.Clear, contentDescription = "标为未完成")
-                            Text("标记未完成", fontSize = 10.sp)
-                        }
-                        Column(
-                            modifier = Modifier
-                                .weight(1f)
-                                .clickable { showMoveTasksDialog = true }
-                                .padding(vertical = 8.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center
-                        ) {
-                            Icon(Icons.Filled.Place, contentDescription = "移动到")
-                            Text("移动到", fontSize = 10.sp)
-                        }
-                        Column(
-                            modifier = Modifier
-                                .weight(1f)
-                                .clickable { showDeleteConfirmDialog = true }
-                                .padding(vertical = 8.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center
-                        ) {
-                            Icon(Icons.Filled.Delete, contentDescription = "删除", tint = MaterialTheme.colorScheme.error)
-                            Text("删除", fontSize = 10.sp, color = MaterialTheme.colorScheme.error)
-                        }
+                        SelectionAction(
+                            icon = Icons.Filled.CheckCircle,
+                            label = stringResource(R.string.mark_done),
+                            enabled = hasSelection,
+                            onClick = { viewModel.markSelectedTasksStatus(true) }
+                        )
+                        SelectionAction(
+                            icon = Icons.Filled.Clear,
+                            label = stringResource(R.string.mark_undone),
+                            enabled = hasSelection,
+                            onClick = { viewModel.markSelectedTasksStatus(false) }
+                        )
+                        SelectionAction(
+                            icon = Icons.AutoMirrored.Filled.ArrowForward,
+                            label = stringResource(R.string.move_to),
+                            enabled = hasSelection,
+                            onClick = { showMoveTasksDialog = true }
+                        )
+                        SelectionAction(
+                            icon = Icons.Filled.Delete,
+                            label = stringResource(R.string.action_delete),
+                            enabled = hasSelection,
+                            isDestructive = true,
+                            onClick = { showDeleteSelectedDialog = true }
+                        )
                     }
                 )
             }
@@ -575,45 +515,51 @@ fun HomeScreen(
             }
         }
 
-        Box(
+        BoxWithConstraints(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
         ) {
+            val horizontalPadding = pageHorizontalPadding(maxWidth)
             Column(
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .fillMaxHeight()
+                    .widthIn(max = ContentMaxWidth)
+                    .fillMaxWidth()
             ) {
                 // Options row above the tasks
                 if (!isSelectionMode) {
                     Row(
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(start = horizontalPadding, end = horizontalPadding - 4.dp, top = 4.dp, bottom = 4.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         val incompleteCount = displayTasks.count { !it.isCompleted }
                         Text(
-                            "$incompleteCount 个未完成",
+                            pluralStringResource(R.plurals.incomplete_count, incompleteCount, incompleteCount),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Row {
                             IconButton(onClick = { listSettingsDialogId = selectedListId }) {
-                                Icon(Icons.Filled.Settings, contentDescription = "清单设置")
+                                Icon(
+                                    Icons.Filled.Settings,
+                                    contentDescription = stringResource(
+                                        if (selectedListId == -1) R.string.summary_settings else R.string.list_settings
+                                    )
+                                )
                             }
                             IconButton(onClick = { viewModel.isSelectionMode.value = true }) {
-                                Icon(Icons.Filled.List, contentDescription = "多选")
+                                Icon(Icons.Outlined.CheckCircle, contentDescription = stringResource(R.string.select_tasks))
                             }
                         }
                     }
                 }
 
-                val activeFrame = coordinator.currentFrame?.takeIf { it.pageId == selectedListId }
-                    ?: SwipeViewportCoordinator.buildPageFrame(
-                        pageId = selectedListId,
-                        generation = 0L,
-                        rawTasks = if (pageTasks.pageId == selectedListId) pageTasks.tasks else emptyList(),
-                        lists = lists ?: emptyList()
-                    )
+                val isPageLoaded = isInitialized && isListsLoaded && pageTasks.pageId == selectedListId
 
                 TaskListContent(
                     pageFrame = activeFrame,
@@ -626,6 +572,8 @@ fun HomeScreen(
                     isSelectionMode = isSelectionMode,
                     canDrag = canDrag,
                     showCompleted = showCompleted,
+                    showEmptyState = isPageLoaded,
+                    horizontalPadding = horizontalPadding,
                     hapticFeedback = hapticFeedback,
                     onCommandConsumed = { pageId, epoch, actionId, gen ->
                         coordinator.onCommandConsumed(pageId, epoch, actionId, gen)
@@ -659,6 +607,12 @@ fun HomeScreen(
                             viewModel.cancelDrag()
                         }
                     },
+                    onMoveTask = { movedTaskId, targetTaskId ->
+                        if (canDrag) {
+                            coordinator.onUserInterruption()
+                            viewModel.saveTaskOrder(movedTaskId, targetTaskId)
+                        }
+                    },
                     onToggleTaskCompletion = { task ->
                         viewModel.toggleTaskCompletion(task)
                     },
@@ -670,7 +624,8 @@ fun HomeScreen(
                     },
                     onTaskClick = onTaskClick,
                     onToggleShowCompleted = { showCompleted = !showCompleted },
-                    onCleanCompletedClick = { showCleanCompletedDialog = true }
+                    onCleanCompletedClick = { showCleanCompletedDialog = true },
+                    onAddTaskClick = { showQuickAddTaskDialog = true }
                 )
             }
 
@@ -693,40 +648,48 @@ fun HomeScreen(
                 onDismiss = { viewModel.dismissUndoRecord(it) },
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
+                    .widthIn(max = ContentMaxWidth)
                     .padding(bottom = if (isSelectionMode) 8.dp else 80.dp)
+            )
+        }
+
+        if (showDeleteSelectedDialog) {
+            val count = selectedTaskIds.size
+            ConfirmDialog(
+                title = stringResource(R.string.delete_selected_title),
+                message = pluralStringResource(R.plurals.delete_selected_message, count, count),
+                confirmLabel = stringResource(R.string.action_delete),
+                isDestructive = true,
+                onConfirm = {
+                    viewModel.deleteSelectedTasks()
+                    showDeleteSelectedDialog = false
+                },
+                onDismiss = { showDeleteSelectedDialog = false }
             )
         }
 
         if (showCleanCompletedDialog) {
             val candidateCount = completedTasks.size
-            androidx.compose.material3.AlertDialog(
-                onDismissRequest = { showCleanCompletedDialog = false },
-                title = { Text("清理已完成待办") },
-                text = { Text("删除收至底部的 $candidateCount 项已完成待办？此操作无法撤销。") },
-                confirmButton = {
-                    Button(
-                        onClick = {
-                            viewModel.cleanCompletedInCurrentScope { deletedCount ->
-                                scope.launch {
-                                    if (deletedCount > 0) {
-                                        snackbarHostState.showSnackbar("已清理 $deletedCount 项已完成待办")
-                                    } else {
-                                        snackbarHostState.showSnackbar("没有可清理的待办")
-                                    }
+            ConfirmDialog(
+                title = stringResource(R.string.clean_completed_title),
+                message = pluralStringResource(R.plurals.clean_completed_message, candidateCount, candidateCount),
+                confirmLabel = stringResource(R.string.action_clean),
+                isDestructive = true,
+                onConfirm = {
+                    viewModel.cleanCompletedInCurrentScope { deletedCount ->
+                        scope.launch {
+                            snackbarHostState.showSnackbar(
+                                if (deletedCount > 0) {
+                                    context.resources.getQuantityString(R.plurals.clean_completed_done, deletedCount, deletedCount)
+                                } else {
+                                    context.getString(R.string.clean_completed_none)
                                 }
-                            }
-                            showCleanCompletedDialog = false
-                        },
-                        colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
-                    ) {
-                        Text("删除")
+                            )
+                        }
                     }
+                    showCleanCompletedDialog = false
                 },
-                dismissButton = {
-                    androidx.compose.material3.TextButton(onClick = { showCleanCompletedDialog = false }) {
-                        Text("取消")
-                    }
-                }
+                onDismiss = { showCleanCompletedDialog = false }
             )
         }
 
@@ -833,17 +796,16 @@ fun HomeScreen(
             )
         }
 
-        if (previewBackupData != null) {
+        val preview = previewBackupData
+        if (preview != null && previewTempPath != null) {
             ImportPreviewDialog(
-                backupData = previewBackupData!!,
-                existingListCount = existingCounts.first,
-                existingTaskCount = existingCounts.second,
+                backupData = preview,
+                existingListCount = existingListCount,
+                existingTaskCount = existingTaskCount,
                 isLoading = isImporting,
                 onDismissRequest = {
                     if (!isImporting) {
-                        transferManager.cleanTempFile(previewTempFile)
-                        previewBackupData = null
-                        previewTempFile = null
+                        clearPreview()
                     }
                 },
                 onPreExportClick = {
@@ -852,31 +814,307 @@ fun HomeScreen(
                 onConfirmImport = { isOverwrite ->
                     scope.launch {
                         isImporting = true
-                        try {
-                            val data = previewBackupData!!
-                            viewModel.importBackup(data, isOverwrite)
-                            transferManager.cleanTempFile(previewTempFile)
-                            val listsCount = data.lists.size
-                            val tasksCount = data.tasks.size
-                            previewBackupData = null
-                            previewTempFile = null
-                            snackbarHostState.showSnackbar(
-                                if (isOverwrite) "覆盖导入完成：已载入 $listsCount 个清单，$tasksCount 个待办"
-                                else "追加导入完成：已新增 $listsCount 个清单，$tasksCount 个待办"
-                            )
+                        val message = try {
+                            viewModel.importBackup(preview, isOverwrite)
+                            if (isOverwrite) {
+                                context.getString(R.string.import_overwrite_done, preview.lists.size, preview.tasks.size)
+                            } else {
+                                context.getString(R.string.import_append_done, preview.lists.size, preview.tasks.size)
+                            }
                         } catch (e: Exception) {
-                            transferManager.cleanTempFile(previewTempFile)
-                            previewBackupData = null
-                            previewTempFile = null
-                            snackbarHostState.showSnackbar("导入失败: ${e.message}")
+                            context.getString(R.string.import_failed, e.reason(context))
                         } finally {
+                            clearPreview()
                             isImporting = false
                         }
+                        snackbarHostState.showSnackbar(message)
                     }
                 }
             )
         }
     }
+}
+
+/** 异常的原因文字，缺省时用“未知错误”，不把空值拼进提示。 */
+private fun Throwable?.reason(context: android.content.Context): String =
+    this?.message?.takeIf { it.isNotBlank() } ?: context.getString(R.string.unknown_error)
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun ListTabsRow(
+    lists: List<TaskList>?,
+    selectedListId: Int,
+    hapticFeedback: HapticFeedback,
+    onSelectList: (Int) -> Unit,
+    onAddList: () -> Unit,
+    onReorderLists: (Int, Int) -> Unit,
+    onSaveListOrder: () -> Unit
+) {
+    val summaryLabel = stringResource(R.string.summary)
+    val newListLabel = stringResource(R.string.new_list)
+    val moveLeftLabel = stringResource(R.string.move_left)
+    val moveRightLabel = stringResource(R.string.move_right)
+    val tabs = remember(lists, summaryLabel) {
+        buildList {
+            add(Pair(-1, summaryLabel))
+            lists?.forEach { add(Pair(it.id, it.name)) }
+            add(Pair(-2, ""))
+        }
+    }
+
+    val selectedTabIndex = tabs.indexOfFirst { it.first == selectedListId }.takeIf { it >= 0 } ?: 0
+
+    val tabsState = rememberLazyListState()
+    val reorderableTabsState = rememberReorderableLazyListState(tabsState) { from, to ->
+        val fromKey = from.key as? Int ?: return@rememberReorderableLazyListState
+        val toKey = to.key as? Int ?: return@rememberReorderableLazyListState
+        if (fromKey <= 0 || toKey <= 0) return@rememberReorderableLazyListState
+        val currentLists = lists ?: return@rememberReorderableLazyListState
+        val fromListIndex = currentLists.indexOfFirst { it.id == fromKey }
+        val toListIndex = currentLists.indexOfFirst { it.id == toKey }
+        if (fromListIndex >= 0 && toListIndex >= 0 && fromListIndex != toListIndex) {
+            onReorderLists(fromListIndex, toListIndex)
+        }
+    }
+
+    LazyRow(
+        state = tabsState,
+        modifier = Modifier
+            .fillMaxWidth()
+            .selectableGroup(),
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        itemsIndexed(tabs, key = { _, tab -> tab.first }) { index, tab ->
+            val isSelected = selectedTabIndex == index
+            val bgColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent
+            val contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
+            val borderColor = if (isSelected) Color.Transparent else MaterialTheme.colorScheme.outlineVariant
+            val isDragEnabled = tab.first > 0
+            val pillShape = CircleShape
+
+            ReorderableItem(
+                state = reorderableTabsState,
+                key = tab.first,
+                enabled = isDragEnabled
+            ) { isDragging ->
+                val elevation by animateDpAsState(if (isDragging) 6.dp else 0.dp, label = "tabElevation")
+                val scale by animateFloatAsState(if (isDragging) 1.05f else 1.0f, label = "tabScale")
+                val itemAlpha by animateFloatAsState(if (isDragging) 0.95f else 1.0f, label = "tabAlpha")
+
+                val dragModifier = if (isDragging) {
+                    Modifier
+                        .shadow(elevation, shape = pillShape)
+                        .graphicsLayer {
+                            scaleX = scale
+                            scaleY = scale
+                            alpha = itemAlpha
+                        }
+                } else {
+                    Modifier
+                }
+
+                // 长按拖拽的无障碍替代操作：在自建清单之间左移、右移
+                val listIndex = lists?.indexOfFirst { it.id == tab.first } ?: -1
+                val reorderActions = if (isDragEnabled && lists != null && listIndex >= 0) {
+                    buildList {
+                        if (listIndex > 0) {
+                            add(CustomAccessibilityAction(moveLeftLabel) {
+                                onReorderLists(listIndex, listIndex - 1)
+                                onSaveListOrder()
+                                true
+                            })
+                        }
+                        if (listIndex < lists.size - 1) {
+                            add(CustomAccessibilityAction(moveRightLabel) {
+                                onReorderLists(listIndex, listIndex + 1)
+                                onSaveListOrder()
+                                true
+                            })
+                        }
+                    }
+                } else {
+                    emptyList()
+                }
+
+                val interactionModifier = if (tab.first == -2) {
+                    Modifier.clickable(role = Role.Button, onClick = onAddList)
+                } else {
+                    Modifier
+                        .selectable(
+                            selected = isSelected,
+                            role = Role.Tab,
+                            onClick = { onSelectList(tab.first) }
+                        )
+                        .semantics { customActions = reorderActions }
+                }
+
+                Box(
+                    modifier = Modifier
+                        .then(dragModifier)
+                        .longPressDraggableHandle(
+                            enabled = isDragEnabled,
+                            onDragStarted = {
+                                hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                            },
+                            onDragStopped = {
+                                onSaveListOrder()
+                            }
+                        )
+                        .heightIn(min = 48.dp)
+                        .clip(pillShape)
+                        .background(bgColor)
+                        .border(1.dp, borderColor, pillShape)
+                        .then(interactionModifier)
+                        .padding(horizontal = 20.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (tab.first == -2) {
+                        Icon(Icons.Filled.Add, contentDescription = newListLabel, tint = contentColor, modifier = Modifier.size(20.dp))
+                    } else {
+                        Text(
+                            text = tab.second,
+                            color = contentColor,
+                            style = MaterialTheme.typography.labelLarge,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** 底部批量操作：图标 + 12sp 标签的整体按钮，图标不单独朗读。 */
+@Composable
+private fun androidx.compose.foundation.layout.RowScope.SelectionAction(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    enabled: Boolean,
+    isDestructive: Boolean = false,
+    onClick: () -> Unit
+) {
+    val baseColor = if (isDestructive) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
+    val color = if (enabled) baseColor else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+    Column(
+        modifier = Modifier
+            .weight(1f)
+            .heightIn(min = 48.dp)
+            .clip(MaterialTheme.shapes.medium)
+            .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
+            .padding(vertical = 4.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Icon(icon, contentDescription = null, tint = color)
+        Text(
+            label,
+            style = MaterialTheme.typography.labelMedium,
+            color = color,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            textAlign = TextAlign.Center
+        )
+    }
+}
+
+/**
+ * 统一的确认对话框：确认在末端、取消在其左侧，均为文字按钮；破坏性确认使用 error 色（规范 4.4）。
+ */
+@Composable
+fun ConfirmDialog(
+    title: String,
+    message: String,
+    confirmLabel: String,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+    isDestructive: Boolean = false,
+    dismissLabel: String = stringResource(R.string.action_cancel),
+    enabled: Boolean = true
+) {
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(title) },
+        text = { Text(message) },
+        confirmButton = {
+            TextButton(
+                onClick = onConfirm,
+                enabled = enabled,
+                colors = if (isDestructive) {
+                    ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                } else {
+                    ButtonDefaults.textButtonColors()
+                }
+            ) {
+                Text(confirmLabel)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss, enabled = enabled) {
+                Text(dismissLabel)
+            }
+        }
+    )
+}
+
+/** 放弃修改确认（规范 4.4 决定 3）：操作为“继续编辑 / 放弃”。 */
+@Composable
+fun DiscardChangesDialog(onKeepEditing: () -> Unit, onDiscard: () -> Unit) {
+    ConfirmDialog(
+        title = stringResource(R.string.discard_title),
+        message = stringResource(R.string.discard_message),
+        confirmLabel = stringResource(R.string.action_discard),
+        dismissLabel = stringResource(R.string.action_keep_editing),
+        isDestructive = true,
+        onConfirm = onDiscard,
+        onDismiss = onKeepEditing
+    )
+}
+
+/** 单选行：整行可点并作为一个焦点播报（规范第 6 节语义合并）。 */
+@Composable
+fun RadioOptionRow(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    description: String? = null,
+    enabled: Boolean = true
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .heightIn(min = 48.dp)
+            .clip(MaterialTheme.shapes.small)
+            .selectable(selected = selected, enabled = enabled, role = Role.RadioButton, onClick = onClick)
+            .padding(horizontal = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        RadioButton(selected = selected, onClick = null, enabled = enabled)
+        Spacer(modifier = Modifier.width(12.dp))
+        Column(modifier = Modifier.padding(vertical = 4.dp)) {
+            Text(label, style = MaterialTheme.typography.bodyLarge)
+            if (description != null) {
+                Text(
+                    description,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+}
+
+/** 分组标题（如“主题外观”），作为读屏标题。 */
+@Composable
+fun SectionHeading(text: String, modifier: Modifier = Modifier) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.titleSmall,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = modifier.semantics { heading() }
+    )
 }
 
 @Composable
@@ -888,81 +1126,117 @@ fun AppSettingsDialog(
 ) {
     androidx.compose.material3.AlertDialog(
         onDismissRequest = onDismissRequest,
-        title = {
-            Text("应用设置", fontWeight = FontWeight.Bold)
-        },
+        title = { Text(stringResource(R.string.app_settings)) },
         text = {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState())
             ) {
-                Text(
-                    text = "主题外观",
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
+                SectionHeading(stringResource(R.string.theme_section))
                 Spacer(modifier = Modifier.height(8.dp))
 
                 val modes = listOf(
-                    Triple(ThemeMode.SYSTEM, "跟随系统", "根据系统深浅色设置自动切换"),
-                    Triple(ThemeMode.LIGHT, "浅色模式", "保持浅色外观"),
-                    Triple(ThemeMode.DARK, "深色模式", "OLED 纯黑深色外观")
+                    Triple(ThemeMode.SYSTEM, R.string.theme_system, R.string.theme_system_desc),
+                    Triple(ThemeMode.LIGHT, R.string.theme_light, R.string.theme_light_desc),
+                    Triple(ThemeMode.DARK, R.string.theme_dark, R.string.theme_dark_desc)
                 )
 
-                modes.forEach { (mode, title, desc) ->
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(8.dp))
-                            .clickable { onThemeModeSelect(mode) }
-                            .padding(vertical = 8.dp, horizontal = 4.dp)
-                    ) {
-                        RadioButton(
+                Column(modifier = Modifier.selectableGroup()) {
+                    modes.forEach { (mode, title, desc) ->
+                        RadioOptionRow(
+                            label = stringResource(title),
+                            description = stringResource(desc),
                             selected = currentThemeMode == mode,
                             onClick = { onThemeModeSelect(mode) }
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Column {
-                            Text(title, fontWeight = FontWeight.Medium)
-                            Text(
-                                desc,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
                     }
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
-                HorizontalDivider(thickness = 0.5.dp)
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 Spacer(modifier = Modifier.height(16.dp))
 
-                Text(
-                    text = "数据管理",
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
+                SectionHeading(stringResource(R.string.data_section))
                 Spacer(modifier = Modifier.height(8.dp))
 
                 OutlinedButton(
                     onClick = onDataManagementClick,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("数据导入与导出")
+                    Text(stringResource(R.string.data_transfer))
                 }
             }
         },
-        confirmButton = {},
-        dismissButton = {
+        confirmButton = {
             TextButton(onClick = onDismissRequest) {
-                Text("关闭")
+                Text(stringResource(R.string.action_close))
             }
         }
     )
+}
+
+/**
+ * 清单主题色选择：每个色块 48dp 触控区，作为单选组播报颜色名称。
+ * 一行放不下全部色块时按行数均分（6 色在窄对话框中为 3×2），避免末尾色块被压扁成胶囊形。
+ */
+@Composable
+private fun ThemeColorPicker(selectedColor: Long, onSelect: (Long) -> Unit) {
+    Text(stringResource(R.string.theme_color), style = MaterialTheme.typography.labelLarge)
+    Spacer(modifier = Modifier.height(4.dp))
+    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+        val slot = 48.dp
+        val gap = 2.dp
+        val fitPerRow = ((maxWidth + gap) / (slot + gap)).toInt().coerceAtLeast(1)
+        val rowCount = (ListThemePalette.size + fitPerRow - 1) / fitPerRow
+        val perRow = (ListThemePalette.size + rowCount - 1) / rowCount
+        Column(
+            modifier = Modifier.selectableGroup(),
+            verticalArrangement = Arrangement.spacedBy(gap)
+        ) {
+            ListThemePalette.withIndex().chunked(perRow).forEach { rowColors ->
+                Row(horizontalArrangement = Arrangement.spacedBy(gap)) {
+                    rowColors.forEach { (index, color) ->
+                        ThemeColorSwatch(
+                            color = color,
+                            name = stringResource(ListThemeColorNames[index]),
+                            isSelected = color == selectedColor,
+                            onSelect = onSelect
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ThemeColorSwatch(color: Long, name: String, isSelected: Boolean, onSelect: (Long) -> Unit) {
+    Box(
+        modifier = Modifier
+            .size(48.dp)
+            .clip(CircleShape)
+            .selectable(selected = isSelected, role = Role.RadioButton, onClick = { onSelect(color) })
+            .semantics { contentDescription = name },
+        contentAlignment = Alignment.Center
+    ) {
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .clip(CircleShape)
+                .background(Color(color))
+                .border(
+                    width = if (isSelected) 3.dp else 0.dp,
+                    color = if (isSelected) MaterialTheme.colorScheme.onSurface else Color.Transparent,
+                    shape = CircleShape
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            if (isSelected) {
+                Icon(Icons.Filled.Check, contentDescription = null, modifier = Modifier.size(20.dp), tint = Color.White)
+            }
+        }
+    }
 }
 
 @Composable
@@ -976,14 +1250,11 @@ fun AddListDialog(
     val keyboardController = LocalSoftwareKeyboardController.current
     var isTextFieldReady by remember { mutableStateOf(false) }
 
-    // High contrast, non-vivid colors
-    val themeColors = listOf(
-        0xFFE53935L, 0xFF1E88E5L, 0xFF43A047L, 0xFFFFB300L, 0xFF8E24AAL, 0xFF00ACC1L
-    )
     val usedColors = lists?.map { it.themeColor } ?: emptyList()
-    val defaultColor = themeColors.firstOrNull { !usedColors.contains(it) } ?: themeColors[0]
-    var selectedColor by remember { mutableStateOf(defaultColor) }
+    val defaultColor = ListThemePalette.firstOrNull { !usedColors.contains(it) } ?: ListThemePalette[0]
+    var selectedColor by rememberSaveable { mutableStateOf(defaultColor) }
     var selectedContentMode by rememberSaveable { mutableStateOf(TaskContentMode.TITLE_AND_DETAIL) }
+    val canCreate = text.isNotBlank()
 
     LaunchedEffect(isTextFieldReady) {
         if (isTextFieldReady) {
@@ -994,14 +1265,18 @@ fun AddListDialog(
 
     androidx.compose.material3.AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("新建列表") },
+        title = { Text(stringResource(R.string.new_list)) },
         text = {
-            Column {
-                androidx.compose.material3.OutlinedTextField(
+            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                OutlinedTextField(
                     value = text,
                     onValueChange = { text = it },
-                    label = { Text("列表名称") },
+                    label = { Text(stringResource(R.string.list_name)) },
                     singleLine = true,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                    keyboardActions = KeyboardActions(onDone = {
+                        if (canCreate) onConfirm(text, selectedColor, selectedContentMode)
+                    }),
                     modifier = Modifier
                         .fillMaxWidth()
                         .focusRequester(focusRequester)
@@ -1012,52 +1287,27 @@ fun AddListDialog(
                         }
                 )
                 Spacer(modifier = Modifier.height(16.dp))
-                Text("选择主题色", style = MaterialTheme.typography.labelLarge)
-                Spacer(modifier = Modifier.height(8.dp))
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    items(themeColors.size) { index ->
-                        val color = themeColors[index]
-                        val isSelected = color == selectedColor
-                        Box(
-                            modifier = Modifier
-                                .size(40.dp)
-                                .clip(CircleShape)
-                                .background(Color(color))
-                                .clickable { selectedColor = color }
-                                .border(
-                                    width = if (isSelected) 3.dp else 0.dp,
-                                    color = if (isSelected) MaterialTheme.colorScheme.onSurface else Color.Transparent,
-                                    shape = CircleShape
-                                )
-                        ) {
-                            if (isSelected) {
-                                Icon(Icons.Filled.CheckCircle, "Selected", modifier = Modifier.align(Alignment.Center).size(20.dp), tint = Color.White)
-                            }
-                        }
-                    }
-                }
+                ThemeColorPicker(selectedColor = selectedColor, onSelect = { selectedColor = it })
                 Spacer(modifier = Modifier.height(16.dp))
                 ContentModeSelector(selected = selectedContentMode, onSelect = { selectedContentMode = it })
             }
         },
         confirmButton = {
-            Button(
-                onClick = { if (text.isNotBlank()) onConfirm(text, selectedColor, selectedContentMode) },
-                enabled = text.isNotBlank(),
-                shape = RoundedCornerShape(50)
+            TextButton(
+                onClick = { if (canCreate) onConfirm(text, selectedColor, selectedContentMode) },
+                enabled = canCreate
             ) {
-                Text("创建")
+                Text(stringResource(R.string.action_create))
             }
         },
         dismissButton = {
-            FilledTonalButton(onClick = onDismiss, shape = RoundedCornerShape(50)) {
-                Text("取消")
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.action_cancel))
             }
         }
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MoveTasksDialog(
     lists: List<TaskList>?,
@@ -1066,38 +1316,47 @@ fun MoveTasksDialog(
 ) {
     androidx.compose.material3.AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("移动到...") },
+        title = { Text(stringResource(R.string.move_to_list_title)) },
         text = {
             if (lists.isNullOrEmpty()) {
-                Text("没有可用的列表")
+                Text(stringResource(R.string.no_lists))
             } else {
                 LazyColumn(modifier = Modifier.heightIn(max = 300.dp)) {
-                    items(lists.size) { index ->
-                        val list = lists[index]
+                    items(lists, key = { it.id }) { list ->
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable { onMove(list.id) }
-                                .padding(vertical = 12.dp, horizontal = 8.dp),
+                                .heightIn(min = 48.dp)
+                                .clip(MaterialTheme.shapes.small)
+                                .clickable(role = Role.Button) { onMove(list.id) }
+                                .padding(horizontal = 8.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(16.dp)
-                                    .background(Color(list.themeColor), CircleShape)
-                            )
+                            ListColorDot(list.themeColor, 16.dp)
                             Spacer(modifier = Modifier.width(16.dp))
-                            Text(list.name)
+                            Text(list.name, style = MaterialTheme.typography.bodyLarge)
                         }
                     }
                 }
             }
         },
-        confirmButton = {
-            androidx.compose.material3.TextButton(onClick = onDismiss) {
-                Text("取消")
+        confirmButton = {},
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.action_cancel))
             }
         }
+    )
+}
+
+/** 清单色点：仅作装饰标识，不参与读屏。 */
+@Composable
+private fun ListColorDot(color: Long, size: androidx.compose.ui.unit.Dp) {
+    Box(
+        modifier = Modifier
+            .size(size)
+            .clip(CircleShape)
+            .background(Color(color))
     )
 }
 
@@ -1110,12 +1369,15 @@ fun QuickAddTaskDialog(
     onConfirm: (listId: Int, title: String, content: String, isFlagged: Boolean) -> Unit
 ) {
     if (lists.isEmpty()) {
-        EmptyListPromptDialog(
-            onDismiss = onDismiss,
-            onCreateListClick = {
+        ConfirmDialog(
+            title = stringResource(R.string.no_lists_title),
+            message = stringResource(R.string.no_lists_message),
+            confirmLabel = stringResource(R.string.new_list),
+            onConfirm = {
                 onDismiss()
                 onCreateListClick()
-            }
+            },
+            onDismiss = onDismiss
         )
     } else {
         QuickAddTaskFormDialog(
@@ -1127,31 +1389,7 @@ fun QuickAddTaskDialog(
     }
 }
 
-@Composable
-private fun EmptyListPromptDialog(
-    onDismiss: () -> Unit,
-    onCreateListClick: () -> Unit
-) {
-    androidx.compose.material3.AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("提示") },
-        text = { Text("当前没有可用清单，请先创建清单。") },
-        confirmButton = {
-            Button(
-                onClick = onCreateListClick,
-                shape = RoundedCornerShape(50)
-            ) {
-                Text("创建清单")
-            }
-        },
-        dismissButton = {
-            FilledTonalButton(onClick = onDismiss, shape = RoundedCornerShape(50)) {
-                Text("取消")
-            }
-        }
-    )
-}
-
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun QuickAddTaskFormDialog(
     lists: List<TaskList>,
@@ -1180,6 +1418,17 @@ private fun QuickAddTaskFormDialog(
         }
         selectedListId = listId
     }
+    fun save() {
+        val listId = selectedListId
+        if (canSave && listId != null) {
+            if (isMerged) {
+                val (splitTitle, splitContent) = TaskText.split(info)
+                onConfirm(listId, splitTitle, splitContent, isFlagged)
+            } else {
+                onConfirm(listId, title, content, isFlagged)
+            }
+        }
+    }
     val focusRequester = remember { FocusRequester() }
     val keyboardController = LocalSoftwareKeyboardController.current
     var isTextFieldReady by remember { mutableStateOf(false) }
@@ -1199,18 +1448,13 @@ private fun QuickAddTaskFormDialog(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("新建待办")
-                IconButton(onClick = { isFlagged = !isFlagged }) {
-                    Icon(
-                        imageVector = if (isFlagged) FlagFilledIcon else FlagOutlinedIcon,
-                        contentDescription = if (isFlagged) "取消插旗" else "插旗置顶",
-                        tint = if (isFlagged) Color(0xFFE53935) else MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+                Text(stringResource(R.string.new_task), modifier = Modifier.weight(1f))
+                FlagToggleButton(isFlagged = isFlagged, onToggle = { isFlagged = !isFlagged })
             }
         },
         text = {
-            Column {
+            // 内容可滚动：输入法弹出、窗口变矮时仍能到达所有输入框
+            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                 val focusModifier = Modifier
                     .fillMaxWidth()
                     .focusRequester(focusRequester)
@@ -1220,83 +1464,67 @@ private fun QuickAddTaskFormDialog(
                         }
                     }
                 if (isMerged) {
-                    androidx.compose.material3.OutlinedTextField(
+                    OutlinedTextField(
                         value = info,
                         onValueChange = { info = it },
-                        label = { Text("信息") },
+                        label = { Text(stringResource(R.string.field_info)) },
                         minLines = 3,
                         maxLines = 8,
                         modifier = focusModifier
                     )
                 } else {
-                    androidx.compose.material3.OutlinedTextField(
+                    OutlinedTextField(
                         value = title,
                         onValueChange = { title = it },
-                        label = { Text("标题") },
+                        label = { Text(stringResource(R.string.field_title)) },
                         singleLine = true,
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                         modifier = focusModifier
                     )
                     Spacer(modifier = Modifier.height(8.dp))
-                    androidx.compose.material3.OutlinedTextField(
+                    OutlinedTextField(
                         value = content,
                         onValueChange = { content = it },
-                        label = { Text("详细信息") },
+                        label = { Text(stringResource(R.string.field_detail)) },
+                        minLines = 2,
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
                 Spacer(modifier = Modifier.height(12.dp))
 
-                Text("选择归属清单", style = MaterialTheme.typography.labelLarge)
-                Spacer(modifier = Modifier.height(6.dp))
+                var expanded by rememberSaveable { mutableStateOf(false) }
+                val selectedList = lists.find { it.id == selectedListId }
 
-                var expanded by remember { mutableStateOf(false) }
-                val currentListName = lists.find { it.id == selectedListId }?.name ?: "请选择清单"
-
-                Box(modifier = Modifier.fillMaxWidth()) {
-                    androidx.compose.material3.OutlinedCard(
+                ExposedDropdownMenuBox(
+                    expanded = expanded,
+                    onExpandedChange = { expanded = it }
+                ) {
+                    OutlinedTextField(
+                        value = selectedList?.name ?: "",
+                        onValueChange = {},
+                        readOnly = true,
+                        singleLine = true,
+                        label = { Text(stringResource(R.string.owner_list)) },
+                        placeholder = { Text(stringResource(R.string.choose_list)) },
+                        leadingIcon = selectedList?.let { list -> { ListColorDot(list.themeColor, 12.dp) } },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { expanded = true },
-                        shape = RoundedCornerShape(8.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(12.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = currentListName,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = if (selectedListId != null) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Icon(Icons.Filled.KeyboardArrowDown, contentDescription = null)
-                        }
-                    }
-
-                    androidx.compose.material3.DropdownMenu(
+                            .menuAnchor(MenuAnchorType.PrimaryNotEditable)
+                    )
+                    ExposedDropdownMenu(
                         expanded = expanded,
                         onDismissRequest = { expanded = false }
                     ) {
                         lists.forEach { list ->
-                            androidx.compose.material3.DropdownMenuItem(
-                                text = {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Box(
-                                            modifier = Modifier
-                                                .size(12.dp)
-                                                .clip(CircleShape)
-                                                .background(Color(list.themeColor))
-                                        )
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Text(list.name)
-                                    }
-                                },
+                            DropdownMenuItem(
+                                text = { Text(list.name) },
+                                leadingIcon = { ListColorDot(list.themeColor, 12.dp) },
                                 onClick = {
                                     selectList(list.id)
                                     expanded = false
-                                }
+                                },
+                                contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
                             )
                         }
                     }
@@ -1304,30 +1532,28 @@ private fun QuickAddTaskFormDialog(
             }
         },
         confirmButton = {
-            Button(
-                onClick = {
-                    val listId = selectedListId
-                    if (canSave && listId != null) {
-                        if (isMerged) {
-                            val (splitTitle, splitContent) = TaskText.split(info)
-                            onConfirm(listId, splitTitle, splitContent, isFlagged)
-                        } else {
-                            onConfirm(listId, title, content, isFlagged)
-                        }
-                    }
-                },
-                enabled = canSave,
-                shape = RoundedCornerShape(50)
-            ) {
-                Text("保存")
+            TextButton(onClick = { save() }, enabled = canSave) {
+                Text(stringResource(R.string.action_save))
             }
         },
         dismissButton = {
-            FilledTonalButton(onClick = onDismiss, shape = RoundedCornerShape(50)) {
-                Text("取消")
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.action_cancel))
             }
         }
     )
+}
+
+/** 插旗开关按钮（新建与编辑共用）：描述为将要执行的动作，并以选中状态表达当前是否插旗。 */
+@Composable
+fun FlagToggleButton(isFlagged: Boolean, onToggle: () -> Unit, enabled: Boolean = true) {
+    IconButton(onClick = onToggle, enabled = enabled) {
+        Icon(
+            imageVector = if (isFlagged) FlagFilledIcon else FlagOutlinedIcon,
+            contentDescription = stringResource(if (isFlagged) R.string.unflag else R.string.flag),
+            tint = if (isFlagged) TodoTheme.colors.flag else MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
 }
 
 @Composable
@@ -1341,117 +1567,84 @@ fun ListSettingsDialog(
     onDelete: () -> Unit
 ) {
     var text by rememberSaveable { mutableStateOf(currentName) }
-    val themeColors = listOf(
-        0xFFE53935L, 0xFF1E88E5L, 0xFF43A047L, 0xFFFFB300L, 0xFF8E24AAL, 0xFF00ACC1L
-    )
-    var selectedColor by remember { mutableStateOf(currentColor) }
+    var selectedColor by rememberSaveable { mutableStateOf(currentColor) }
     var selectedCompletionMode by rememberSaveable { mutableStateOf(currentCompletionMode) }
     var selectedContentMode by rememberSaveable { mutableStateOf(currentContentMode) }
+    var showDeleteConfirm by rememberSaveable { mutableStateOf(false) }
 
     androidx.compose.material3.AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("列表设置") },
+        title = { Text(stringResource(R.string.list_settings)) },
         text = {
-            Column {
-                androidx.compose.material3.OutlinedTextField(
+            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                OutlinedTextField(
                     value = text,
                     onValueChange = { text = it },
-                    label = { Text("列表名称") },
+                    label = { Text(stringResource(R.string.list_name)) },
                     singleLine = true,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                     modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(modifier = Modifier.height(16.dp))
-                Text("选择主题色", style = MaterialTheme.typography.labelLarge)
-                Spacer(modifier = Modifier.height(8.dp))
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    items(themeColors.size) { index ->
-                        val color = themeColors[index]
-                        val isSelected = color == selectedColor
-                        Box(
-                            modifier = Modifier
-                                .size(40.dp)
-                                .clip(CircleShape)
-                                .background(Color(color))
-                                .clickable { selectedColor = color }
-                                .border(
-                                    width = if (isSelected) 3.dp else 0.dp,
-                                    color = if (isSelected) MaterialTheme.colorScheme.onSurface else Color.Transparent,
-                                    shape = CircleShape
-                                )
-                        ) {
-                            if (isSelected) {
-                                Icon(Icons.Filled.CheckCircle, "Selected", modifier = Modifier.align(Alignment.Center).size(20.dp), tint = Color.White)
-                            }
-                        }
-                    }
-                }
+                ThemeColorPicker(selectedColor = selectedColor, onSelect = { selectedColor = it })
                 Spacer(modifier = Modifier.height(16.dp))
-                Text("待办完成模式", style = MaterialTheme.typography.labelLarge)
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    androidx.compose.material3.RadioButton(
+                Text(stringResource(R.string.completion_mode), style = MaterialTheme.typography.labelLarge)
+                Column(modifier = Modifier.selectableGroup()) {
+                    RadioOptionRow(
+                        label = stringResource(R.string.completion_keep),
                         selected = selectedCompletionMode == 0,
                         onClick = { selectedCompletionMode = 0 }
                     )
-                    Text("保持原位", modifier = Modifier.clickable { selectedCompletionMode = 0 })
-                    Spacer(modifier = Modifier.width(16.dp))
-                    androidx.compose.material3.RadioButton(
+                    RadioOptionRow(
+                        label = stringResource(R.string.completion_bottom),
                         selected = selectedCompletionMode == 1,
                         onClick = { selectedCompletionMode = 1 }
                     )
-                    Text("收至底部", modifier = Modifier.clickable { selectedCompletionMode = 1 })
                 }
                 Spacer(modifier = Modifier.height(16.dp))
                 ContentModeSelector(selected = selectedContentMode, onSelect = { selectedContentMode = it })
+                Spacer(modifier = Modifier.height(8.dp))
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                Spacer(modifier = Modifier.height(8.dp))
+                // 危险区：删除清单不作为对话框的第三个按钮（规范 4.4）
+                TextButton(
+                    onClick = { showDeleteConfirm = true },
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Icon(Icons.Filled.Delete, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(stringResource(R.string.delete_list))
+                }
             }
         },
         confirmButton = {
-            Button(
+            TextButton(
                 onClick = { if (text.isNotBlank()) onConfirmRename(text, selectedColor, selectedCompletionMode, selectedContentMode) },
-                enabled = text.isNotBlank(),
-                shape = RoundedCornerShape(50)
+                enabled = text.isNotBlank()
             ) {
-                Text("保存")
+                Text(stringResource(R.string.action_save))
             }
         },
         dismissButton = {
-            var showDeleteConfirm by remember { mutableStateOf(false) }
-            if (showDeleteConfirm) {
-                androidx.compose.material3.AlertDialog(
-                    onDismissRequest = { showDeleteConfirm = false },
-                    title = { Text("确认删除") },
-                    text = { Text("是否确定删除该列表？包含在其中的待办事项也将被全部删除。") },
-                    confirmButton = {
-                        Button(onClick = {
-                            showDeleteConfirm = false
-                            onDelete()
-                        }, colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)) {
-                            Text("删除")
-                        }
-                    },
-                    dismissButton = {
-                        androidx.compose.material3.TextButton(onClick = { showDeleteConfirm = false }) { Text("取消") }
-                    }
-                )
-            }
-            Row {
-                Button(
-                    onClick = { showDeleteConfirm = true },
-                    colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.errorContainer,
-                        contentColor = MaterialTheme.colorScheme.onErrorContainer
-                    ),
-                    shape = RoundedCornerShape(50)
-                ) {
-                    Text("删除")
-                }
-                Spacer(modifier = Modifier.width(8.dp))
-                FilledTonalButton(onClick = onDismiss, shape = RoundedCornerShape(50)) {
-                    Text("取消")
-                }
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.action_cancel))
             }
         }
     )
+
+    if (showDeleteConfirm) {
+        ConfirmDialog(
+            title = stringResource(R.string.delete_list_title),
+            message = stringResource(R.string.delete_list_message, currentName),
+            confirmLabel = stringResource(R.string.action_delete),
+            isDestructive = true,
+            onConfirm = {
+                showDeleteConfirm = false
+                onDelete()
+            },
+            onDismiss = { showDeleteConfirm = false }
+        )
+    }
 }
 
 @Composable
@@ -1466,7 +1659,7 @@ fun SummarySettingsDialog(
 
     androidx.compose.material3.AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("汇总设置") },
+        title = { Text(stringResource(R.string.summary_settings)) },
         text = {
             Column(
                 modifier = Modifier
@@ -1478,58 +1671,58 @@ fun SummarySettingsDialog(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("汇总展示的清单", style = MaterialTheme.typography.labelLarge)
+                    Text(
+                        stringResource(R.string.summary_lists_label),
+                        style = MaterialTheme.typography.labelLarge,
+                        modifier = Modifier.weight(1f)
+                    )
                     if (lists.isNotEmpty()) {
                         val allSelected = lists.all { tempVisibilityMap[it.id] == true }
                         TextButton(
                             onClick = {
                                 val target = !allSelected
                                 tempVisibilityMap = lists.associate { it.id to target }
-                            },
-                            contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)
+                            }
                         ) {
-                            Text(
-                                if (allSelected) "全不选" else "全选",
-                                style = MaterialTheme.typography.labelMedium
-                            )
+                            Text(stringResource(if (allSelected) R.string.action_deselect_all else R.string.action_select_all))
                         }
                     }
                 }
                 Text(
-                    "取消勾选的清单待办将不在“汇总”页中展示，但在其独立清单页中保留",
+                    stringResource(R.string.summary_lists_hint),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
                 if (lists.isEmpty()) {
                     Text(
-                        "暂无清单",
+                        stringResource(R.string.summary_no_lists),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(vertical = 8.dp)
                     )
                 } else {
-                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Column {
                         lists.forEach { list ->
                             val isChecked = tempVisibilityMap[list.id] ?: true
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .clickable {
-                                        tempVisibilityMap = tempVisibilityMap + (list.id to !isChecked)
-                                    }
-                                    .padding(vertical = 4.dp, horizontal = 4.dp),
+                                    .heightIn(min = 48.dp)
+                                    .clip(MaterialTheme.shapes.small)
+                                    .toggleable(
+                                        value = isChecked,
+                                        role = Role.Checkbox,
+                                        onValueChange = { checked ->
+                                            tempVisibilityMap = tempVisibilityMap + (list.id to checked)
+                                        }
+                                    )
+                                    .padding(horizontal = 4.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(14.dp)
-                                        .clip(CircleShape)
-                                        .background(Color(list.themeColor))
-                                )
-                                Spacer(modifier = Modifier.width(10.dp))
+                                ListColorDot(list.themeColor, 14.dp)
+                                Spacer(modifier = Modifier.width(12.dp))
                                 Text(
                                     text = list.name,
                                     style = MaterialTheme.typography.bodyMedium,
@@ -1537,12 +1730,7 @@ fun SummarySettingsDialog(
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis
                                 )
-                                Checkbox(
-                                    checked = isChecked,
-                                    onCheckedChange = { checked ->
-                                        tempVisibilityMap = tempVisibilityMap + (list.id to checked)
-                                    }
-                                )
+                                Checkbox(checked = isChecked, onCheckedChange = null)
                             }
                         }
                     }
@@ -1550,16 +1738,13 @@ fun SummarySettingsDialog(
             }
         },
         confirmButton = {
-            Button(
-                onClick = { onConfirm(tempVisibilityMap) },
-                shape = RoundedCornerShape(50)
-            ) {
-                Text("保存")
+            TextButton(onClick = { onConfirm(tempVisibilityMap) }) {
+                Text(stringResource(R.string.action_save))
             }
         },
         dismissButton = {
-            androidx.compose.material3.FilledTonalButton(onClick = onDismiss, shape = RoundedCornerShape(50)) {
-                Text("取消")
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.action_cancel))
             }
         }
     )
@@ -1569,13 +1754,22 @@ fun SummarySettingsDialog(
 fun SwipeableSnackbar(data: SnackbarData) {
     var offset by remember { mutableStateOf(Offset.Zero) }
     var visible by remember { mutableStateOf(true) }
+    val dismissLabel = stringResource(R.string.dismiss_message)
 
     if (visible) {
-        androidx.compose.material3.Snackbar(
+        Snackbar(
             snackbarData = data,
+            shape = MaterialTheme.shapes.extraSmall,
             modifier = Modifier
                 .offset { IntOffset(offset.x.toInt(), offset.y.toInt()) }
                 .graphicsLayer { alpha = 1f - (offset.getDistance() / 500f).coerceIn(0f, 1f) }
+                .semantics {
+                    customActions = listOf(CustomAccessibilityAction(dismissLabel) {
+                        visible = false
+                        data.dismiss()
+                        true
+                    })
+                }
                 .pointerInput(data) {
                     detectDragGestures(
                         onDragEnd = {
@@ -1607,6 +1801,8 @@ private fun TaskListContent(
     isSelectionMode: Boolean,
     canDrag: Boolean,
     showCompleted: Boolean,
+    showEmptyState: Boolean,
+    horizontalPadding: androidx.compose.ui.unit.Dp,
     hapticFeedback: HapticFeedback,
     onCommandConsumed: (Int, Long, Long, Long) -> Unit,
     onToggleFlag: (Task) -> Unit,
@@ -1615,12 +1811,14 @@ private fun TaskListContent(
     onDragStarted: (Int) -> Unit,
     onSaveTaskOrder: () -> Unit,
     onDragCancel: (Int) -> Unit,
+    onMoveTask: (movedTaskId: Int, targetTaskId: Int) -> Unit,
     onToggleTaskCompletion: (Task) -> Unit,
     onUncompleteTask: (Task) -> Unit,
     onToggleTaskSelection: (Int) -> Unit,
     onTaskClick: (Int) -> Unit,
     onToggleShowCompleted: () -> Unit,
     onCleanCompletedClick: () -> Unit,
+    onAddTaskClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     var lastConsumedActionId by remember { mutableStateOf(-1L) }
@@ -1641,16 +1839,79 @@ private fun TaskListContent(
         }
     }
 
+    val flagLabel = stringResource(R.string.flag)
+    val unflagLabel = stringResource(R.string.unflag)
+    val moveUpLabel = stringResource(R.string.move_up)
+    val moveDownLabel = stringResource(R.string.move_down)
+    val moveTopLabel = stringResource(R.string.move_to_top)
+    val expandedLabel = stringResource(R.string.state_expanded)
+    val collapsedLabel = stringResource(R.string.state_collapsed)
+
     LazyColumn(
         state = listState,
         modifier = modifier
             .fillMaxSize()
-            .padding(horizontal = 16.dp),
-        contentPadding = PaddingValues(top = 8.dp, bottom = 80.dp)
+            .padding(horizontal = horizontalPadding),
+        contentPadding = PaddingValues(top = 8.dp, bottom = 88.dp)
     ) {
-        items(pageFrame.displayTasks, key = { it.id }) { task ->
+        if (showEmptyState && pageFrame.displayTasks.isEmpty() && pageFrame.completedTasks.isEmpty()) {
+            item(key = "empty_state") {
+                Column(
+                    modifier = Modifier
+                        .fillParentMaxHeight(0.7f)
+                        .fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        stringResource(R.string.empty_tasks),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    if (!isSelectionMode) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        TextButton(onClick = onAddTaskClick) {
+                            Text(stringResource(R.string.new_task))
+                        }
+                    }
+                }
+            }
+        }
+
+        val mTasks = pageFrame.displayTasks
+        itemsIndexed(mTasks, key = { _, task -> task.id }) { index, task ->
             val isSelected = selectedTaskIds.contains(task.id)
-            val listColor = listColorMap[task.listId] ?: 0xFFD3E3FDL
+            val listColor = listColorMap[task.listId] ?: ListColorFallback
+
+            // 手势的无障碍等价入口：插旗 / 取消插旗；可拖拽范围内上移、下移、移到顶部
+            val actions = if (isSelectionMode) {
+                emptyList()
+            } else {
+                buildList {
+                    add(CustomAccessibilityAction(if (task.isFlagged) unflagLabel else flagLabel) {
+                        onToggleFlag(task)
+                        true
+                    })
+                    if (canDrag) {
+                        if (index > 0) {
+                            add(CustomAccessibilityAction(moveUpLabel) {
+                                onMoveTask(task.id, mTasks[index - 1].id)
+                                true
+                            })
+                            add(CustomAccessibilityAction(moveTopLabel) {
+                                onMoveTask(task.id, mTasks[0].id)
+                                true
+                            })
+                        }
+                        if (index < mTasks.size - 1) {
+                            add(CustomAccessibilityAction(moveDownLabel) {
+                                onMoveTask(task.id, mTasks[index + 1].id)
+                                true
+                            })
+                        }
+                    }
+                }
+            }
 
             ReorderableItem(
                 reorderableListState,
@@ -1668,7 +1929,7 @@ private fun TaskListContent(
                 val dragModifier = if (isDragging) {
                     Modifier
                         .zIndex(1f)
-                        .shadow(elevation, shape = RoundedCornerShape(24.dp))
+                        .shadow(elevation, shape = MaterialTheme.shapes.extraLarge)
                         .graphicsLayer {
                             scaleX = scale
                             scaleY = scale
@@ -1678,7 +1939,7 @@ private fun TaskListContent(
                     Modifier
                 }
 
-                val interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+                val interactionSource = remember { MutableInteractionSource() }
 
                 LaunchedEffect(interactionSource) {
                     interactionSource.interactions.collect { interaction ->
@@ -1720,6 +1981,7 @@ private fun TaskListContent(
                         isMergedInfo = task.listId in mergedListIds,
                         isSelected = isSelected,
                         isSelectionMode = isSelectionMode,
+                        accessibilityActions = actions,
                         onToggleTask = { onToggleTaskCompletion(task) },
                         onClick = {
                             if (isSelectionMode) {
@@ -1737,41 +1999,50 @@ private fun TaskListContent(
         if (pageFrame.completedTasks.isNotEmpty()) {
             item(key = "completed_header") {
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(8.dp))
-                        .clickable { onToggleShowCompleted() }
-                        .padding(vertical = 12.dp),
+                    modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        modifier = Modifier
+                            .weight(1f)
+                            .heightIn(min = 48.dp)
+                            .clip(MaterialTheme.shapes.small)
+                            .clickable(role = Role.Button, onClick = onToggleShowCompleted)
+                            .semantics {
+                                heading()
+                                stateDescription = if (showCompleted) expandedLabel else collapsedLabel
+                            },
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         Icon(
-                            imageVector = if (showCompleted) Icons.Filled.KeyboardArrowDown else Icons.Filled.KeyboardArrowRight,
-                            contentDescription = "Toggle Completed",
+                            imageVector = if (showCompleted) Icons.Filled.KeyboardArrowDown else Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                            contentDescription = null,
                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            "已完成 (${pageFrame.completedTasks.size})",
-                            fontWeight = FontWeight.Bold,
+                            stringResource(R.string.completed_header, pageFrame.completedTasks.size),
+                            style = MaterialTheme.typography.titleSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                     if (!isSelectionMode) {
                         TextButton(
-                            onClick = onCleanCompletedClick
+                            onClick = onCleanCompletedClick,
+                            colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
                         ) {
-                            Text("清理", color = MaterialTheme.colorScheme.error)
+                            Text(stringResource(R.string.action_clean))
                         }
                     }
                 }
             }
 
             if (showCompleted) {
-                items(pageFrame.completedTasks, key = { it.id }) { task ->
+                // 已完成区倒序显示：最近完成的在最上（APP-037）。存储顺序不变，新完成项仍追加到区域末尾
+                items(pageFrame.completedTasks.asReversed(), key = { it.id }) { task ->
                     val isSelected = selectedTaskIds.contains(task.id)
-                    val listColor = listColorMap[task.listId] ?: 0xFFD3E3FDL
+                    val listColor = listColorMap[task.listId] ?: ListColorFallback
 
                     SwipeableTaskItem(
                         task = task,
@@ -1894,16 +2165,16 @@ fun SwipeableTaskItem(
         enableDismissFromEndToStart = !isSelectionMode && enableSwipeToFlag,
         backgroundContent = {
             if (isEndToStart && dismissState.progress > 0.01f) {
-                val isDark = MaterialTheme.colorScheme.background == Color.Black
+                val todoColors = TodoTheme.colors
                 val bgColor = if (task.isFlagged) {
-                    MaterialTheme.colorScheme.surfaceVariant
+                    MaterialTheme.colorScheme.surfaceContainerHighest
                 } else {
-                    if (isDark) com.example.ui.theme.DarkSwipeFlagBg else Color(0xFFFFEBEE)
+                    todoColors.swipeFlagContainer
                 }
                 val contentColor = if (task.isFlagged) {
                     MaterialTheme.colorScheme.onSurfaceVariant
                 } else {
-                    if (isDark) com.example.ui.theme.DarkSwipeFlagIcon else Color(0xFFD32F2F)
+                    todoColors.onSwipeFlagContainer
                 }
 
                 val progress = dismissState.progress
@@ -1913,9 +2184,10 @@ fun SwipeableTaskItem(
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .clip(RoundedCornerShape(24.dp))
+                        .clip(MaterialTheme.shapes.extraLarge)
                         .background(bgColor.copy(alpha = bgAlpha))
-                        .padding(horizontal = 24.dp),
+                        .padding(horizontal = 24.dp)
+                        .clearAndSetSemantics { },
                     contentAlignment = Alignment.CenterEnd
                 ) {
                     Row(
@@ -1923,14 +2195,14 @@ fun SwipeableTaskItem(
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Text(
-                            text = if (task.isFlagged) "取消插旗" else "插旗置顶",
+                            text = stringResource(if (task.isFlagged) R.string.unflag else R.string.flag),
+                            style = MaterialTheme.typography.labelLarge,
                             fontWeight = if (isThresholdReached) FontWeight.Bold else FontWeight.Medium,
-                            fontSize = 14.sp,
                             color = contentColor
                         )
                         Icon(
                             imageVector = if (task.isFlagged) FlagOutlinedIcon else FlagFilledIcon,
-                            contentDescription = if (task.isFlagged) "取消插旗" else "插旗",
+                            contentDescription = null,
                             tint = contentColor,
                             modifier = Modifier
                                 .size(24.dp)
@@ -1956,58 +2228,89 @@ fun TaskCard(
     modifier: Modifier = Modifier,
     isSelected: Boolean,
     isSelectionMode: Boolean,
+    accessibilityActions: List<CustomAccessibilityAction> = emptyList(),
     onToggleTask: () -> Unit,
     onClick: () -> Unit
 ) {
+    val todoColors = TodoTheme.colors
+    val selectedLabel = stringResource(R.string.state_selected)
+    val notSelectedLabel = stringResource(R.string.state_not_selected)
+    val completeLabel = stringResource(R.string.complete_task)
+
     Card(
+        onClick = onClick,
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(24.dp))
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(24.dp),
+            .semantics {
+                if (accessibilityActions.isNotEmpty()) customActions = accessibilityActions
+                if (isSelectionMode) {
+                    selected = isSelected
+                    stateDescription = if (isSelected) selectedLabel else notSelectedLabel
+                }
+            },
+        shape = MaterialTheme.shapes.extraLarge,
         colors = CardDefaults.cardColors(
-            containerColor = if (isSelected) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.surface
+            containerColor = if (isSelected) MaterialTheme.colorScheme.secondaryContainer else todoColors.card,
+            contentColor = if (isSelected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurface
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = if (isSelected) 4.dp else 2.dp)
+        // 层级用色调表达，静止卡片不再叠加阴影（规范 3.5）
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Row(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Theme color stripe
+            // 清单色条（装饰，不参与读屏）
             if (task.listId > 0) {
                 Box(
                     modifier = Modifier
                         .width(4.dp)
                         .height(40.dp)
-                        .clip(RoundedCornerShape(2.dp))
+                        .clip(MaterialTheme.shapes.extraSmall)
                         .background(Color(listThemeColor))
                 )
-                Spacer(modifier = Modifier.width(12.dp))
             }
 
             if (isSelectionMode) {
-                // Checkbox equivalent for selection
-                Box(
-                    modifier = Modifier
-                        .size(24.dp)
-                        .clip(CircleShape)
-                        .background(if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent)
-                        .border(
-                            2.dp,
-                            if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
-                            CircleShape
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    if (isSelected) {
-                        Icon(Icons.Filled.CheckCircle, contentDescription = "Selected", tint = Color.White, modifier = Modifier.size(16.dp))
+                // 多选指示：卡片整体暴露选中状态，指示本身不单独播报
+                Box(modifier = Modifier.size(48.dp), contentAlignment = Alignment.Center) {
+                    Box(
+                        modifier = Modifier
+                            .size(24.dp)
+                            .clip(CircleShape)
+                            .background(if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent)
+                            .border(
+                                2.dp,
+                                if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
+                                CircleShape
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (isSelected) {
+                            Icon(
+                                Icons.Filled.Check,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onPrimary,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
                     }
                 }
             } else {
-                IconButton(
-                    onClick = onToggleTask,
-                    modifier = Modifier.size(24.dp)
+                // 完成控件：48dp 触控区内显示 24dp 圆圈，作为复选框暴露“已选中 / 未选中”状态
+                Box(
+                    modifier = Modifier
+                        .minimumInteractiveComponentSize()
+                        .size(48.dp)
+                        .toggleable(
+                            value = task.isCompleted,
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = ripple(bounded = false, radius = 20.dp),
+                            role = Role.Checkbox,
+                            onValueChange = { onToggleTask() }
+                        )
+                        .semantics { contentDescription = completeLabel },
+                    contentAlignment = Alignment.Center
                 ) {
                     if (task.isCompleted) {
                         Box(
@@ -2018,9 +2321,9 @@ fun TaskCard(
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
-                                imageVector = Icons.Filled.CheckCircle,
-                                contentDescription = "Completed",
-                                tint = Color.White,
+                                imageVector = Icons.Filled.Check,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onPrimary,
                                 modifier = Modifier.size(16.dp)
                             )
                         }
@@ -2029,28 +2332,28 @@ fun TaskCard(
                             modifier = Modifier
                                 .size(24.dp)
                                 .clip(CircleShape)
-                                .border(2.dp, com.example.ui.theme.CheckCircleOutlineColor, CircleShape)
+                                .border(2.dp, MaterialTheme.colorScheme.outline, CircleShape)
                         )
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.width(16.dp))
+            Spacer(modifier = Modifier.width(4.dp))
 
-            // 合并格式：显示信息跳过空行后的前两行，每行各一行省略
+            // 合并格式：信息跳过空行，首行作标题，其余行作次要信息；两种格式都最多显示 3 行
             val (firstLine, secondLine) = if (isMergedInfo) {
                 TaskText.displayLines(task.title, task.content)
             } else {
                 task.title to task.content
             }
+            val textDecoration = if (task.isCompleted) TextDecoration.LineThrough else null
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = firstLine,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = MaterialTheme.typography.titleMedium.fontSize,
-                    color = if (task.isCompleted) Color(0xFF9E9E9E) else MaterialTheme.colorScheme.onSurface,
-                    textDecoration = if (task.isCompleted) TextDecoration.LineThrough else null,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = if (task.isCompleted) todoColors.completedText else MaterialTheme.colorScheme.onSurface,
+                    textDecoration = textDecoration,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -2059,10 +2362,10 @@ fun TaskCard(
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = secondLine,
-                        fontSize = MaterialTheme.typography.bodyMedium.fontSize,
-                        color = if (task.isCompleted) Color(0xFF9E9E9E) else MaterialTheme.colorScheme.onSurfaceVariant,
-                        textDecoration = if (task.isCompleted) TextDecoration.LineThrough else null,
-                        maxLines = if (isMergedInfo) 1 else 2,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = if (task.isCompleted) todoColors.completedText else MaterialTheme.colorScheme.onSurfaceVariant,
+                        textDecoration = textDecoration,
+                        maxLines = TaskText.SECONDARY_MAX_LINES,
                         overflow = TextOverflow.Ellipsis
                     )
                 }
@@ -2072,8 +2375,8 @@ fun TaskCard(
                 Spacer(modifier = Modifier.width(8.dp))
                 Icon(
                     imageVector = FlagFilledIcon,
-                    contentDescription = "已插旗",
-                    tint = Color(0xFFE53935),
+                    contentDescription = stringResource(R.string.flagged),
+                    tint = todoColors.flag,
                     modifier = Modifier.size(20.dp)
                 )
             }

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 12+：使用系统卡片圆角（Widget 质量 Tier 1 WS-2）；低版本见 drawable/ 中的 20dp 兜底 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="@color/widget_background" />
+    <corners android:radius="@android:dimen/system_app_widget_background_radius" />
+</shape>

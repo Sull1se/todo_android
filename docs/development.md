@@ -4,9 +4,9 @@ purpose: 构建、安装、签名、版本更新与数据库迁移的可复做�
 status: 当前有效
 owner: 当前任务 Agent；维护者负责审阅、合并与正式发布
 scope: 本地 Android 开发、验证与发布流程
-updated: 2026-10-30
+updated: 2026-11-07
 verification: 已静态检查
-verified: 2026-10-30；对照 3.4.3 构建配置静态核对命令、签名边界、迁移描述与测试覆盖说明；单元测试、lintDebug 与 Debug 构建在本地 Windows 环境实际执行通过
+verified: 2026-11-07；对照 3.5.2 构建配置静态核对命令、签名与凭据边界、迁移描述与测试覆盖说明；单元测试、lintDebug 与 Debug 构建在本地 Windows 环境实际执行通过
 ---
 
 # Todo 开发与发布
@@ -20,10 +20,10 @@ verified: 2026-10-30；对照 3.4.3 构建配置静态核对命令、签名边�
 <!-- docs:config:start -->
 | 配置项 | 当前声明值 |
 | --- | --- |
-| versionName | `3.4.3` |
+| versionName | `3.5.2` |
 | applicationId | `com.aistudio.todo.xqwdfa` |
 | namespace | `com.example` |
-| versionCode | `28` |
+| versionCode | `31` |
 | minSdk | `24` |
 | targetSdk | `36` |
 | compileSdk API | `36` |
@@ -49,9 +49,9 @@ verified: 2026-10-30；对照 3.4.3 构建配置静态核对命令、签名边�
 
 ## 版本与发布状态
 
-当前源码版本为 **3.4.3 / versionCode 28**（Room schema 7，备份格式版本 3），配置变化后以生成表为准。正式 Release APK 由维护者在对外发布时放入 GitHub Releases，不提交进源码仓库。
+当前源码版本为 **3.5.2 / versionCode 31**（Room schema 7，备份格式版本 3），配置变化后以生成表为准。正式 Release APK 由维护者在对外发布时放入 GitHub Releases，不提交进源码仓库。
 
-本地构建的 APK 按约定复制到仓库根目录 `dist/`（该目录被 Git 忽略），命名 `todo-v<versionName>-<variant>.apk`（如 `todo-v3.4.3-debug.apk`）。Gradle 默认输出在 `app/build/outputs/apk/`，没有自动复制任务。
+本地构建的 APK 按约定复制到仓库根目录 `dist/`（该目录被 Git 忽略），命名 `todo-v<versionName>-<variant>.apk`（如 `todo-v3.5.2-debug.apk`）。Gradle 默认输出在 `app/build/outputs/apk/`，没有自动复制任务。
 
 ## 构建前置条件
 
@@ -78,9 +78,9 @@ Debug 构建不依赖任何发行私钥，是本地验证的默认路径：
 .\gradlew.bat :app:assembleDebug
 if ($LASTEXITCODE -ne 0) { throw 'Debug 构建失败' }
 New-Item -ItemType Directory -Force dist | Out-Null
-if (Test-Path dist/todo-v3.4.3-debug.apk) { throw '目标 APK 已存在；先核对版本与哈希，不覆盖历史产物' }
-Copy-Item app/build/outputs/apk/debug/app-debug.apk dist/todo-v3.4.3-debug.apk
-if (-not (Test-Path dist/todo-v3.4.3-debug.apk)) { throw 'Debug APK 复制失败' }
+if (Test-Path dist/todo-v3.5.2-debug.apk) { throw '目标 APK 已存在；先核对版本与哈希，不覆盖历史产物' }
+Copy-Item app/build/outputs/apk/debug/app-debug.apk dist/todo-v3.5.2-debug.apk
+if (-not (Test-Path dist/todo-v3.5.2-debug.apk)) { throw 'Debug APK 复制失败' }
 ```
 
 成功条件：测试与 lint 通过、`BUILD SUCCESSFUL`，并已将本次产物复制到 `dist/`。测试报告位于 `app/build/reports/`；报告是构建产物，不提交进 Git。
@@ -89,7 +89,7 @@ if (-not (Test-Path dist/todo-v3.4.3-debug.apk)) { throw 'Debug APK 复制失败
 
 ```powershell
 adb devices
-adb -s <测试设备序列号> install -r dist/todo-v3.4.3-debug.apk
+adb -s <测试设备序列号> install -r dist/todo-v3.5.2-debug.apk
 ```
 
 尖括号必须换成测试设备序列号。成功条件包括安装成功、应用启动及对应行为验收；仅有 APK 不代表运行正常。覆盖安装若签名或版本不兼容，停止并核对包名、签名和版本，不默认卸载真实用户应用。
@@ -101,8 +101,24 @@ Android Studio 可直接 Open 仓库根目录、同步、选择设备并 Run。
 | 场景 | 实际配置 |
 | --- | --- |
 | Debug | 仓库根目录存在 `debug.keystore` 时使用它，否则采用 Android 默认调试签名 |
-| Release，存在发行密钥 | 仅使用 `.signing/todo-release.jks`（别名 `todo-release`），密码来自构建会话环境变量 `STORE_PASSWORD` 与 `KEY_PASSWORD` |
-| Release，无发行密钥或缺密码 | 前置门禁直接拦截并报错退出（`GradleException`），绝不回退调试证书，绝不产出可交付 APK |
+| Release，存在发行密钥 | 仅使用 `.signing/todo-release.jks`（别名 `todo-release`），Gradle 从构建会话环境变量 `STORE_PASSWORD` 与 `KEY_PASSWORD` 读取密码；交付脚本可自动加载下述本地加密凭据 |
+| Release，无发行密钥或最终缺少有效密码 | 签名门禁拦截并报错退出，绝不回退调试证书，绝不产出可交付 APK |
+
+`Build-Release.ps1` 的凭据优先级：逐项保留已有非空环境变量；缺值且 `.signing/release-passwords.xml` 存在时，通过 `Import-Clixml` 加载 `Store` / `Key` 两个 `SecureString` 字段，仅补齐缺失项。凭据无法解密、格式错误或所需字段为空时直接停止，不输出原始异常或密码，也不静默改用其它签名。`-VerifyOnly` 不加载密码。直接调用 Gradle 不会加载该文件。凭据文件不存在时保留交互流程：缺少 `STORE_PASSWORD` 时隐藏输入提示；缺少 `KEY_PASSWORD` 时默认与密钥库密码相同。
+
+持有发行密钥的维护者可在仓库根目录的 Windows PowerShell 7 中一次性保存本地凭据（已有文件时停止，不覆盖）：
+
+```powershell
+New-Item -ItemType Directory -Force .signing | Out-Null
+$path = '.signing/release-passwords.xml'
+if (Test-Path $path) { throw '凭据文件已存在，请勿直接覆盖' }
+@{
+    Store = Read-Host '密钥库密码' -AsSecureString
+    Key = Read-Host '密钥密码' -AsSecureString
+} | Export-Clixml -LiteralPath $path
+```
+
+Windows DPAPI 加密绑定保存时的 Windows 用户与计算机，换电脑或重装系统后需重新配置；这不是可迁移的密码备份。文件随 `/.signing/` 被 Git 忽略，不写入系统永久环境变量；解密后的密码仅供构建进程使用，不记录到日志或文档。
 
 发行私钥与密码不出现在本仓库中；`.gitignore` 已明确忽略 `/.signing/`、`debug.keystore`、`*.jks`、`.env` 与 `local.properties`。**未持有发行凭据的人员与 Agent 无法构建 Release 交付包，这是有意的数据与身份保护边界**：需要验证应用行为时一律使用 Debug 构建。
 
@@ -174,7 +190,7 @@ Android Studio 可直接 Open 仓库根目录、同步、选择设备并 Run。
 ## 现有测试实际覆盖
 
 - `TodoUnitTest` 保留实体与手工列表重排测试，不单独作为生产持久化证据；迁移由 `AppDatabaseMigrationTest` 验证，约束与级联由 `TodoDaoTest` 验证。
-- `TodoPersistenceTest` 覆盖生产 ViewModel 的连续拖拽、即时插旗、批量更新、页面快照 Flow 发射匹配；`HomeInteractionTest` 覆盖拖拽会话生命周期、防抖、换页取消与语义冲突拒绝；`SwipeViewportCoordinatorTest` 覆盖左滑视口协调器七阶段状态流转、纯决策与世代校验，以及滚动中断发帧、取消帧重置、快照页面标识校验、独立拖拽会话保持与插旗新建回顶的页面归属过滤、手势/左滑/换页取消与超时放弃；`CreateFlaggedViewportTest` 经真实新建弹窗覆盖插旗新建在顶部与列表中部回顶、未插旗新建与新建到其他清单时视口保持；`SwipeRefreshInteractionTest` 覆盖汇总页、参与汇总独立清单及隐藏清单左滑中断 Compose UI 交互；`UndoViewportInteractionTest` 覆盖撤销插旗视口状态机、PinPosition 定位与倒计时解耦防抖；`DetailNavigationInteractionTest` 覆盖详情页双击/快速退出防重锁、淡出转场生命周期门禁与栈保护；`DetailDraftRestorationTest` 覆盖任务详情草稿状态（标题、备注、旗帜）在 Activity/组合状态恢复、横竖屏旋转或内存重建下的持久保持与任务切换隔离；`JsonBackupCodecTest` 和 `DataTransferIntegrationTest` 覆盖必需集合校验、追加/覆盖与事务回滚；`TaskOrderEngineTest` 覆盖纯排序变换与范围划分；`ThemeAndSettingsTest` 覆盖三态主题偏好持久化、设置入口交互与 OLED 纯黑色值断言。桌面小卡片由 `WidgetDataTest`（清单回退、未完成项过滤与顺序、快捷新建默认清单）、`WidgetTaskActionsTest`（勾选完成按完成模式写库、去重与通知、快捷新建、编辑弹窗保存与删除）、`WidgetViewsTest`（RemoteViews 展开后检查标题、色点、计数与宽窄适配、行内备注 / 色条 / 旗帜、复选框恒未勾选、空状态、强制浅深色配色与昼夜颜色资源一致）、`TodoWidgetRendererTest`（经接收器渲染替换初始布局、绑定清单渲染与删除清理、恢复换号迁移、唯一可调入口尺寸声明、勾选处理中不读库即移除、内容未变时不重复推送、列表项广播完成任务并移除、打开桌面编辑弹窗）与 `WidgetLaunchTest`（卡片打开清单与详情、编辑弹窗意图）覆盖，不覆盖真实启动器的尺寸调整、滚动、点击、原生复选框本地切换、渲染耗时与进程冻结；合并信息格式由 `TaskTextTest`（换算与显示行）、`ListContentModeTest`（存储与切换整理）、`AppDatabaseMigrationTest`（6→7）、`JsonBackupCodecTest` / `DataTransferIntegrationTest`（备份版本 3）与 `MergedInfoModeUiTest`（新建弹窗、列表卡片、桌面编辑弹窗）覆盖。`app/build.gradle.kts` 配置了 `testOptions.unitTests.all { it.forkEvery = 1 }`，消除测试类间静态线程调度状态污染。具体运行日期、测试数量与结果见 [验收与验证历史](verification-history.md)。
+- `TodoPersistenceTest` 覆盖生产 ViewModel 的连续拖拽、即时插旗、批量更新、页面快照 Flow 发射匹配；`HomeInteractionTest` 覆盖拖拽会话生命周期、防抖、换页取消与语义冲突拒绝；`SwipeViewportCoordinatorTest` 覆盖左滑视口协调器七阶段状态流转、纯决策与世代校验，以及滚动中断发帧、取消帧重置、快照页面标识校验、独立拖拽会话保持与插旗新建回顶的页面归属过滤、手势/左滑/换页取消与超时放弃；`CreateFlaggedViewportTest` 经真实新建弹窗覆盖插旗新建在顶部与列表中部回顶、未插旗新建与新建到其他清单时视口保持；`SwipeRefreshInteractionTest` 覆盖汇总页、参与汇总独立清单及隐藏清单左滑中断 Compose UI 交互；`UndoViewportInteractionTest` 覆盖撤销插旗视口状态机、PinPosition 定位与倒计时解耦防抖；`DetailNavigationInteractionTest` 覆盖详情页双击/快速退出防重锁、淡出转场生命周期门禁与栈保护；`DetailDraftRestorationTest` 覆盖任务详情草稿状态（标题、备注、旗帜）在 Activity/组合状态恢复、横竖屏旋转或内存重建下的持久保持与任务切换隔离；`JsonBackupCodecTest` 和 `DataTransferIntegrationTest` 覆盖必需集合校验、追加/覆盖与事务回滚；`TaskOrderEngineTest` 覆盖纯排序变换与范围划分；`ThemeAndSettingsTest` 覆盖三态主题偏好持久化、设置入口交互与 OLED 纯黑色值断言；`UiUxSpecTest` 覆盖 [UI 与 UX 规范](ui-ux.md) 中可自动断言的部分：已完成区倒序、系统返回先退出多选、任务卡片的复选框角色与无障碍自定义操作、英文资源齐备与中文术语统一。Robolectric 测试经 `src/test/resources/robolectric.properties` 固定默认语言为 `zh-rCN`。桌面小卡片由 `WidgetDataTest`（清单回退、未完成项过滤与顺序、快捷新建默认清单）、`WidgetTaskActionsTest`（勾选完成按完成模式写库、去重与通知、快捷新建、编辑弹窗保存与删除）、`WidgetViewsTest`（RemoteViews 展开后检查标题、色点、计数与宽窄适配、行内备注 / 色条 / 旗帜、复选框恒未勾选、空状态、强制浅深色配色与昼夜颜色资源一致）、`TodoWidgetRendererTest`（经接收器渲染替换初始布局、绑定清单渲染与删除清理、恢复换号迁移、唯一可调入口尺寸声明、勾选处理中不读库即移除、内容未变时不重复推送、列表项广播完成任务并移除、打开桌面编辑弹窗）与 `WidgetLaunchTest`（卡片打开清单与详情、编辑弹窗意图）覆盖，不覆盖真实启动器的尺寸调整、滚动、点击、原生复选框本地切换、渲染耗时与进程冻结；合并信息格式由 `TaskTextTest`（换算与显示行）、`ListContentModeTest`（存储与切换整理）、`AppDatabaseMigrationTest`（6→7）、`JsonBackupCodecTest` / `DataTransferIntegrationTest`（备份版本 3）与 `MergedInfoModeUiTest`（新建弹窗、列表卡片、桌面编辑弹窗）覆盖。`app/build.gradle.kts` 配置了 `testOptions.unitTests.all { it.forkEvery = 1 }`，消除测试类间静态线程调度状态污染。具体运行日期、测试数量与结果见 [验收与验证历史](verification-history.md)。
 - [ExampleUnitTest.kt](../app/src/test/java/com/example/ExampleUnitTest.kt) 是加法示例；设备上下文测试 [ExampleInstrumentedTest.kt](../app/src/androidTest/java/com/example/ExampleInstrumentedTest.kt) 用于在真实设备核对 applicationId。示例与包名检查不覆盖复杂 UI 交互；构建配置中声明的 Roborazzi 依赖当前没有活动截图断言，不存在截图回归基线。
 - 设备端 `androidTest` 当前仅 1 项包名检查；Compose 交互、迁移与 DAO 等业务自动化在 JVM/Robolectric 层运行。维护者决定设备端测试主要依靠 APK 交付后的手动安装验收，暂不增设设备业务自动化；保留已有 androidTest 和 JVM/Robolectric 测试资产。
 - 测试覆盖说明描述用例用途；实际通过结果统一记录在验收与验证历史，不将覆盖说明作为运行证据。
@@ -193,5 +209,7 @@ Android Studio 可直接 Open 仓库根目录、同步、选择设备并 Run。
 | 拖拽边界 | 短列表、首项、滚至尽头、快速连续拖动无跳动/闪回；松手和重启后顺序一致 |
 | 删除 | 取消不删除；确认清单删除只删除所属任务，其他任务保留 |
 | 升级与签名 | 旧库测试升级保留数据，签名匹配覆盖安装；不靠清空数据通过验收 |
-| 桌面小卡片 | 添加后显示内容而不停留加载态，应用升级后自动重绘；只有一个可调入口（默认 2×2，可调至 4×3）且布局不截断；添加时选择清单（默认汇总），长按可重选；点勾选框后待办即时从卡片消失、无打开应用式动画，并按完成模式完成；包含隐藏/已完成及其有效清单归属；追加保留原数据，覆盖须确认；拒绝无有效归属数据，非法文件或写入失败不改变原库，往返保留字段和关系 |
+| 桌面小卡片 | 添加后显示内容而不停留加载态，应用升级后自动重绘；只有一个可调入口（默认 2×2，可调至 4×3）且布局不截断；添加时选择清单（默认汇总），长按可重选；点勾选框后待办即时从卡片消失、无打开应用式动画，并按完成模式完成；“＋”新建默认卡片所示清单（汇总不预选）；点标题打开清单，点待办在桌面弹出编辑窗口（改文字、插旗、删除确认）且不进入应用；应用内改动、清单删除与主题切换后卡片即时同步；系统深色时浅色 → 跟随系统、系统浅色时深色 → 跟随系统均立即对齐，跟随系统状态下再切系统昼夜仍同步；可用 `adb logcat -s TodoWidget` 查看每次推送的耗时 |
+| 待办格式 | 原有清单升级后仍为“标题 + 详细信息”；新建清单与清单设置可选“合并为信息”；合并格式新建与编辑只有可换行的“信息”框；两种格式在应用与卡片均为标题 1 行 + 次要信息最多 2 行，超出显示省略号，合并格式显示时跳过空行；两种格式互相切换后首行为标题、其余为详细信息，数据不丢；导出再导入保留格式 |
+| 本地导入导出 | v3 全量包含隐藏/已完成及其有效清单归属；追加保留原数据，覆盖须确认；拒绝无有效归属数据，非法文件或写入失败不改变原库，往返保留字段和关系 |
 | 主题与设置 | 三态主题即时切换与重启持久化；深色 OLED 纯黑背景；应用设置与清单设置入口独立正常 |

@@ -9,18 +9,18 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -30,14 +30,17 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import com.example.R
 import com.example.data.Task
 import com.example.data.TaskContentMode
 import com.example.data.TaskList
 import com.example.data.TaskText
-import com.example.ui.theme.FlagFilledIcon
-import com.example.ui.theme.FlagOutlinedIcon
+import com.example.ui.ConfirmDialog
+import com.example.ui.DiscardChangesDialog
+import com.example.ui.FlagToggleButton
 import kotlinx.coroutines.launch
 
 /**
@@ -61,7 +64,7 @@ class WidgetEditTaskActivity : ComponentActivity() {
                     val repository = WidgetDataAccess.ensureReady(appContext)
                     val task = repository.getTaskById(taskId)
                     if (task == null) {
-                        Toast.makeText(appContext, "该待办已不存在", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(appContext, appContext.getString(R.string.task_not_found), Toast.LENGTH_SHORT).show()
                         WidgetRefresher.refreshNow(appContext)
                         finish()
                         return@LaunchedEffect
@@ -104,44 +107,54 @@ fun WidgetTaskEditDialog(
     onDelete: () -> Unit
 ) {
     val isMerged = list?.contentMode == TaskContentMode.MERGED
+    val originalInfo = TaskText.merge(task.title, task.content)
     var title by rememberSaveable(task.id) { mutableStateOf(task.title) }
     var content by rememberSaveable(task.id) { mutableStateOf(task.content) }
-    var info by rememberSaveable(task.id) { mutableStateOf(TaskText.merge(task.title, task.content)) }
+    var info by rememberSaveable(task.id) { mutableStateOf(originalInfo) }
     var isFlagged by rememberSaveable(task.id) { mutableStateOf(task.isFlagged) }
     var showDeleteConfirm by rememberSaveable { mutableStateOf(false) }
+    var showDiscardConfirm by rememberSaveable { mutableStateOf(false) }
     // 收至底部清单中的已完成项禁止插旗，与应用编辑页一致
     val canFlag = !(task.isCompleted && list?.completionMode == 1)
     val hasText = if (isMerged) info.isNotBlank() else title.isNotBlank()
+    // 与应用详情页一致：有修改时，取消、返回与点击遮罩都先确认“放弃修改？”
+    val isDirty = isFlagged != task.isFlagged ||
+        if (isMerged) info != originalInfo else (title != task.title || content != task.content)
+    val requestClose: () -> Unit = {
+        if (isDirty) {
+            showDiscardConfirm = true
+        } else {
+            onDismiss()
+        }
+    }
 
     AlertDialog(
-        onDismissRequest = onDismiss,
+        onDismissRequest = requestClose,
         title = {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("编辑待办", modifier = Modifier.weight(1f))
+                Text(stringResource(R.string.edit_task), modifier = Modifier.weight(1f))
                 if (canFlag) {
-                    IconButton(onClick = { isFlagged = !isFlagged }) {
-                        Icon(
-                            imageVector = if (isFlagged) FlagFilledIcon else FlagOutlinedIcon,
-                            contentDescription = if (isFlagged) "取消插旗" else "插旗",
-                            tint = if (isFlagged) Color(0xFFE53935) else MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
+                    FlagToggleButton(isFlagged = isFlagged, onToggle = { isFlagged = !isFlagged })
                 }
                 IconButton(onClick = { showDeleteConfirm = true }) {
-                    Icon(Icons.Filled.Delete, contentDescription = "删除", tint = MaterialTheme.colorScheme.error)
+                    Icon(
+                        Icons.Filled.Delete,
+                        contentDescription = stringResource(R.string.action_delete),
+                        tint = MaterialTheme.colorScheme.error
+                    )
                 }
             }
         },
         text = {
-            Column {
+            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                 if (isMerged) {
                     OutlinedTextField(
                         value = info,
                         onValueChange = { info = it },
-                        label = { Text("信息") },
+                        label = { Text(stringResource(R.string.field_info)) },
                         minLines = 3,
                         maxLines = 10,
                         modifier = Modifier.fillMaxWidth()
@@ -150,15 +163,17 @@ fun WidgetTaskEditDialog(
                     OutlinedTextField(
                         value = title,
                         onValueChange = { title = it },
-                        label = { Text("标题") },
+                        label = { Text(stringResource(R.string.field_title)) },
                         singleLine = true,
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                         modifier = Modifier.fillMaxWidth()
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     OutlinedTextField(
                         value = content,
                         onValueChange = { content = it },
-                        label = { Text("详细信息") },
+                        label = { Text(stringResource(R.string.field_detail)) },
+                        minLines = 2,
                         maxLines = 8,
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -166,47 +181,45 @@ fun WidgetTaskEditDialog(
             }
         },
         confirmButton = {
-            Button(
+            TextButton(
                 onClick = {
                     if (hasText) {
                         val (savedTitle, savedContent) = if (isMerged) TaskText.split(info) else title to content
                         onSave(savedTitle, savedContent, isFlagged)
                     }
                 },
-                enabled = hasText,
-                shape = RoundedCornerShape(50)
+                enabled = hasText
             ) {
-                Text("保存")
+                Text(stringResource(R.string.action_save))
             }
         },
         dismissButton = {
-            FilledTonalButton(onClick = onDismiss, shape = RoundedCornerShape(50)) {
-                Text("取消")
+            TextButton(onClick = requestClose) {
+                Text(stringResource(R.string.action_cancel))
             }
         }
     )
 
     if (showDeleteConfirm) {
-        AlertDialog(
-            onDismissRequest = { showDeleteConfirm = false },
-            title = { Text("删除待办") },
-            text = { Text("确定要删除此待办事项吗？此操作无法撤销。") },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        showDeleteConfirm = false
-                        onDelete()
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
-                    shape = RoundedCornerShape(50)
-                ) {
-                    Text("删除")
-                }
+        ConfirmDialog(
+            title = stringResource(R.string.delete_task_title),
+            message = stringResource(R.string.delete_task_message),
+            confirmLabel = stringResource(R.string.action_delete),
+            isDestructive = true,
+            onConfirm = {
+                showDeleteConfirm = false
+                onDelete()
             },
-            dismissButton = {
-                FilledTonalButton(onClick = { showDeleteConfirm = false }, shape = RoundedCornerShape(50)) {
-                    Text("取消")
-                }
+            onDismiss = { showDeleteConfirm = false }
+        )
+    }
+
+    if (showDiscardConfirm) {
+        DiscardChangesDialog(
+            onKeepEditing = { showDiscardConfirm = false },
+            onDiscard = {
+                showDiscardConfirm = false
+                onDismiss()
             }
         )
     }

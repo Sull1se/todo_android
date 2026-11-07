@@ -4,9 +4,9 @@ purpose: 规定每次任务的同步、清理、索引生成和验证流程
 status: 当前有效
 owner: 当前任务 Agent；维护者负责审阅与合并
 scope: 正式文档、项目 Skill、生成内容、本地提交钩子和文档工具
-updated: 2026-10-30
+updated: 2026-11-07
 verification: 已静态检查
-verified: 2026-10-30；新增 Claude 入口（DOC-SKILL）规则并经 Test-Docs 与 Test-LocalGate 隔离回归验证；README 按维护者决定豁免检查器治理并保留问题报告要求
+verified: 2026-11-07；职责表新增 UI 与 UX 规范；2026-10-30；新增 Claude 入口（DOC-SKILL）规则并经 Test-Docs 与 Test-LocalGate 隔离回归验证；README 按维护者决定豁免检查器治理并保留问题报告要求
 ---
 
 # Todo 文档维护规则
@@ -23,6 +23,7 @@ verified: 2026-10-30；新增 Claude 入口（DOC-SKILL）规则并经 Test-Docs
 | 文档清单、用途、状态 | [总索引](index.md) | 所有受管文档元数据；登记表自动生成 |
 | 归档历史方案、回顾与阶段性文档 | `docs/archive/`（存在归档文档时由 `Sync` 生成归档索引） | `docs/archive/` 下的所有历史文档；登记表自动生成 |
 | 业务、UI、排序、架构、数据归属 | [应用与架构](todo.md) | `MainActivity`、`ui/`、`data/`、主题和资源 |
+| UI 与 UX 规范（视觉令牌、组件、交互、无障碍、自适应） | [UI 与 UX 规范](ui-ux.md) | 官方 Material 3 与 Android 质量指南、`ui/theme/`、`ui/` 与卡片资源 |
 | 构建、SDK、依赖、签名、版本、迁移、测试覆盖说明与通用回归矩阵 | [开发与发布](development.md) | Gradle、版本目录、Wrapper、数据库、Manifest 与测试代码 |
 | 当前存在的问题及各自解决进度 | [当前问题与解决进度](quality.md) | 未闭环问题的证据摘要、当前进度、阻碍、下一步和关闭条件 |
 | 历史验收、验证记录、已解决问题 | [验收与验证历史](verification-history.md) | 按日期与版本绑定的命令结果、验收反馈、迁入问题记录和关闭依据 |

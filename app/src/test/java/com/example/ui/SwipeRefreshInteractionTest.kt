@@ -125,8 +125,10 @@ class SwipeRefreshInteractionTest {
         assertFalse(initialTask.isFlagged)
 
         // 左滑该项以触发插旗
+        // 3.5.0 卡片按排版角色加高后，Task A02 右半部分被 FAB 覆盖；起点放在卡片 70% 宽处以避开 FAB，
+        // 滑动距离仍超过插旗阈值，验证内容不变
         composeTestRule.onNodeWithText("Task A02").performTouchInput {
-            swipeLeft()
+            swipeLeft(startX = width * 0.7f, endX = 0f)
         }
 
         // 立即进行上下滑动中断自动视口动作

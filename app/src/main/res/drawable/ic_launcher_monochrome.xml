@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 主题图标（Android 13+ 单色图层）：只保留 todo.svg 便签的线稿与勾，由系统着色 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group
+        android:scaleX="0.66"
+        android:scaleY="0.66"
+        android:translateX="14.4"
+        android:translateY="14.4">
+        <group
+            android:pivotX="60"
+            android:pivotY="60"
+            android:rotation="-4">
+            <path
+                android:strokeColor="#FF000000"
+                android:strokeWidth="3.4"
+                android:strokeLineCap="round"
+                android:strokeLineJoin="round"
+                android:pathData="M30,22.5 Q58,21 85.5,22.2 Q90.3,22.6 90,27 Q90.8,60 89.6,91.5 Q89.5,96.2 85,96 Q57,97 30.5,95.6 Q26,95.4 26.2,91 Q25.4,58 26.4,26.6 Q26.8,22.3 30,22.5 Z M37,53 Q42.5,52.4 48.2,53.3 Q48.8,59 48,64.6 Q42,65.3 36.6,64.4 Q35.9,58.5 37,53 Z M37,72 Q42.5,71.4 48.2,72.3 Q48.8,78 48,83.6 Q42,84.3 36.6,83.4 Q35.9,77.5 37,72 Z M56,40.5 Q68,38.8 80.5,40 M56,59 Q65,60.2 76,58.6 M56,78.2 Q63,77 70,78" />
+            <path
+                android:strokeColor="#FF000000"
+                android:strokeWidth="4.6"
+                android:strokeLineCap="round"
+                android:strokeLineJoin="round"
+                android:pathData="M34.5,38.5 Q38.5,42.5 41.5,47.5 Q46.5,36 55,27.5" />
+        </group>
+    </group>
+</vector>

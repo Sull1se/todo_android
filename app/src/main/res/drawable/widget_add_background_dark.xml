@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="oval">
-    <solid android:color="#FF042964" />
-</shape>
+<!-- “＋”按钮：48dp 触控区内居中 36dp 圆形底 -->
+<inset xmlns:android="http://schemas.android.com/apk/res/android" android:inset="6dp">
+    <shape android:shape="oval">
+        <solid android:color="#FF042964" />
+    </shape>
+</inset>

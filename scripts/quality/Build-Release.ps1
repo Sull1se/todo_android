@@ -63,6 +63,46 @@ if (-not $VerifyOnly) {
     if (-not (Test-Path -LiteralPath $keystorePath -PathType Leaf)) {
         throw "发行密钥文件不存在: $keystorePath。构建拒绝。"
     }
+    $credentialsPath = Join-Path $repoRoot '.signing/release-passwords.xml'
+    $needsStorePassword = [string]::IsNullOrWhiteSpace($env:STORE_PASSWORD)
+    $needsKeyPassword = [string]::IsNullOrWhiteSpace($env:KEY_PASSWORD)
+    if (($needsStorePassword -or $needsKeyPassword) -and (Test-Path -LiteralPath $credentialsPath -PathType Leaf)) {
+        if (-not $IsWindows) {
+            throw '本地发行凭据仅支持在保存它的 Windows 用户环境中解密；请改用签名环境变量。'
+        }
+        $credentials = $null
+        try {
+            $credentials = Import-Clixml -LiteralPath $credentialsPath -ErrorAction Stop
+            if ($credentials -isnot [System.Collections.IDictionary]) {
+                throw '发行凭据格式无效。'
+            }
+            foreach ($field in @('Store', 'Key')) {
+                $needed = if ($field -eq 'Store') { $needsStorePassword } else { $needsKeyPassword }
+                if ($needed -and ($credentials[$field] -isnot [Security.SecureString] -or $credentials[$field].Length -eq 0)) {
+                    throw '发行凭据必须包含非空的加密密码。'
+                }
+            }
+            if ($needsStorePassword) {
+                $password = [Net.NetworkCredential]::new('', $credentials['Store']).Password
+                if ([string]::IsNullOrWhiteSpace($password)) { throw '发行凭据不能是空白密码。' }
+                $env:STORE_PASSWORD = $password
+            }
+            if ($needsKeyPassword) {
+                $password = [Net.NetworkCredential]::new('', $credentials['Key']).Password
+                if ([string]::IsNullOrWhiteSpace($password)) { throw '发行凭据不能是空白密码。' }
+                $env:KEY_PASSWORD = $password
+            }
+        } catch {
+            throw '无法加载本地发行凭据；请在保存凭据的 Windows 用户环境中运行，或重新保存有效凭据，也可通过环境变量提供两个签名密码。'
+        } finally {
+            $password = $null
+            if ($credentials -is [System.Collections.IDictionary]) {
+                foreach ($value in $credentials.Values) {
+                    if ($value -is [Security.SecureString]) { $value.Dispose() }
+                }
+            }
+        }
+    }
     if ([string]::IsNullOrWhiteSpace($env:STORE_PASSWORD)) {
         $securePass = Read-Host -Prompt "请输入发行密钥库密码 (输入内容不回显)" -AsSecureString
         $bstr = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($securePass)

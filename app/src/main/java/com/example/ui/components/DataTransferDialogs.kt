@@ -1,7 +1,5 @@
 package com.example.ui.components
 
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -11,19 +9,19 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -33,9 +31,12 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.example.R
 import com.example.data.transfer.BackupData
+import com.example.ui.RadioOptionRow
+import com.example.ui.SectionHeading
 
 @Composable
 fun DataManagementDialog(
@@ -45,9 +46,7 @@ fun DataManagementDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismissRequest,
-        title = {
-            Text("数据管理", fontWeight = FontWeight.Bold)
-        },
+        title = { Text(stringResource(R.string.data_section)) },
         text = {
             Column(
                 modifier = Modifier
@@ -55,13 +54,14 @@ fun DataManagementDialog(
                     .verticalScroll(rememberScrollState())
             ) {
                 Text(
-                    text = "支持将全部清单和待办导出为本地 JSON 单文件，或从备份文件导入数据。\n\n提示：备份文件为明文，包含您的待办详情，请妥善保管。",
+                    text = stringResource(R.string.data_management_message),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
                 Spacer(modifier = Modifier.height(20.dp))
 
+                // 内容区中的独立操作使用描边按钮，不出现第二个强调按钮（规范 4.4）
                 OutlinedButton(
                     onClick = {
                         onDismissRequest()
@@ -69,26 +69,25 @@ fun DataManagementDialog(
                     },
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("导出全部数据 (JSON)")
+                    Text(stringResource(R.string.export_all))
                 }
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                Button(
+                OutlinedButton(
                     onClick = {
                         onDismissRequest()
                         onImportClick()
                     },
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("从 JSON 文件导入")
+                    Text(stringResource(R.string.import_from_json))
                 }
             }
         },
-        confirmButton = {},
-        dismissButton = {
+        confirmButton = {
             TextButton(onClick = onDismissRequest) {
-                Text("关闭")
+                Text(stringResource(R.string.action_close))
             }
         }
     )
@@ -112,9 +111,7 @@ fun ImportPreviewDialog(
                 onDismissRequest()
             }
         },
-        title = {
-            Text("导入数据预览", fontWeight = FontWeight.Bold)
-        },
+        title = { Text(stringResource(R.string.import_preview_title)) },
         text = {
             Column(
                 modifier = Modifier
@@ -123,127 +120,87 @@ fun ImportPreviewDialog(
             ) {
                 Card(
                     colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
                     ),
+                    shape = MaterialTheme.shapes.medium,
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(modifier = Modifier.padding(12.dp)) {
-                        Text(
-                            text = "文件信息",
-                            style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.Bold
-                        )
+                        SectionHeading(stringResource(R.string.file_info))
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "来源版本: ${backupData.sourceAppVersion}",
+                            text = stringResource(R.string.source_version, backupData.sourceAppVersion),
                             style = MaterialTheme.typography.bodySmall
                         )
                         Text(
-                            text = "导出时间: ${backupData.exportedAt}",
+                            text = stringResource(R.string.exported_at, backupData.exportedAt),
                             style = MaterialTheme.typography.bodySmall
                         )
                         Text(
-                            text = "文件包含: ${backupData.lists.size} 个清单，${backupData.tasks.size} 个待办",
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.primary
+                            text = stringResource(R.string.file_contains, backupData.lists.size, backupData.tasks.size),
+                            style = MaterialTheme.typography.bodyMedium
                         )
                     }
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
-                androidx.compose.material3.HorizontalDivider(thickness = 0.5.dp)
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 Spacer(modifier = Modifier.height(12.dp))
 
-                Text("选择导入模式", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
+                SectionHeading(stringResource(R.string.import_mode))
+                Spacer(modifier = Modifier.height(4.dp))
 
-                Spacer(modifier = Modifier.height(8.dp))
-
-                // 追加模式（默认）
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable(enabled = !isLoading) { isOverwrite = false }
-                ) {
-                    RadioButton(
+                Column(modifier = Modifier.selectableGroup()) {
+                    RadioOptionRow(
+                        label = stringResource(R.string.import_append),
+                        description = stringResource(R.string.import_append_desc),
                         selected = !isOverwrite,
-                        onClick = { isOverwrite = false },
-                        enabled = !isLoading
+                        enabled = !isLoading,
+                        onClick = { isOverwrite = false }
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Column {
-                        Text("追加导入（保留现有数据）", fontWeight = FontWeight.Medium)
-                        Text(
-                            "文件中的清单和待办将追加到末尾，现有数据不受任何影响。",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // 覆盖模式
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable(enabled = !isLoading) { isOverwrite = true }
-                ) {
-                    RadioButton(
+                    RadioOptionRow(
+                        label = stringResource(R.string.import_overwrite),
+                        description = stringResource(R.string.import_overwrite_desc),
                         selected = isOverwrite,
-                        onClick = { isOverwrite = true },
-                        enabled = !isLoading
+                        enabled = !isLoading,
+                        onClick = { isOverwrite = true }
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Column {
-                        Text("覆盖导入（清空现有数据）", fontWeight = FontWeight.Medium)
-                        Text(
-                            "完全替换为文件中的内容，清空当前已有清单与待办。",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
                 }
 
                 if (isOverwrite) {
                     Spacer(modifier = Modifier.height(12.dp))
                     Card(
                         colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.errorContainer
+                            containerColor = MaterialTheme.colorScheme.errorContainer,
+                            contentColor = MaterialTheme.colorScheme.onErrorContainer
                         ),
-                        shape = RoundedCornerShape(8.dp),
+                        shape = MaterialTheme.shapes.small,
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Column(modifier = Modifier.padding(12.dp)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(
                                     Icons.Default.Warning,
-                                    contentDescription = "警告",
-                                    tint = MaterialTheme.colorScheme.error,
+                                    contentDescription = null,
                                     modifier = Modifier.size(20.dp)
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(
-                                    text = "高风险操作提示",
-                                    style = MaterialTheme.typography.labelMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onErrorContainer
+                                    text = stringResource(R.string.overwrite_warning_title),
+                                    style = MaterialTheme.typography.titleSmall
                                 )
                             }
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = "覆盖导入将完全删除现存的 $existingListCount 个清单和 $existingTaskCount 个待办！此操作不可逆回退。",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onErrorContainer
+                                text = stringResource(R.string.overwrite_warning, existingListCount, existingTaskCount),
+                                style = MaterialTheme.typography.bodySmall
                             )
                             Spacer(modifier = Modifier.height(8.dp))
-                            TextButton(
+                            OutlinedButton(
                                 onClick = onPreExportClick,
                                 enabled = !isLoading
                             ) {
-                                Text("先导出当前数据备份", color = MaterialTheme.colorScheme.error)
+                                Text(stringResource(R.string.export_before_import))
                             }
                         }
                     }
@@ -251,20 +208,24 @@ fun ImportPreviewDialog(
             }
         },
         confirmButton = {
-            Button(
+            TextButton(
                 onClick = { onConfirmImport(isOverwrite) },
-                enabled = !isLoading
+                enabled = !isLoading,
+                colors = if (isOverwrite) {
+                    ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                } else {
+                    ButtonDefaults.textButtonColors()
+                }
             ) {
                 if (isLoading) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(16.dp),
-                        strokeWidth = 2.dp,
-                        color = MaterialTheme.colorScheme.onPrimary
+                        strokeWidth = 2.dp
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("正在导入...")
+                    Text(stringResource(R.string.importing))
                 } else {
-                    Text(if (isOverwrite) "确认覆盖导入" else "确认追加导入")
+                    Text(stringResource(if (isOverwrite) R.string.action_overwrite_import else R.string.action_import))
                 }
             }
         },
@@ -273,7 +234,7 @@ fun ImportPreviewDialog(
                 onClick = onDismissRequest,
                 enabled = !isLoading
             ) {
-                Text("取消")
+                Text(stringResource(R.string.action_cancel))
             }
         }
     )

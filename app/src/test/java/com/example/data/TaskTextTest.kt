@@ -30,9 +30,12 @@ class TaskTextTest {
     }
 
     @Test
-    fun displayLines_skipsBlankLinesAndKeepsTwo() {
-        assertEquals("买菜" to "西红柿", TaskText.displayLines("买菜", "\n\n西红柿\n鸡蛋"))
+    fun displayLines_skipsBlankLinesAndKeepsRestForThreeLineDisplay() {
+        // 3.5.0 起列表与卡片最多显示 3 行：首行 + 其余非空行（界面限 2 行）
+        assertEquals("买菜" to "西红柿\n鸡蛋", TaskText.displayLines("买菜", "\n\n西红柿\n鸡蛋"))
+        assertEquals("买菜" to "西红柿\n鸡蛋\n牛奶", TaskText.displayLines("买菜", "西红柿\n\n鸡蛋\n牛奶\n"))
         assertEquals("买菜" to "", TaskText.displayLines("买菜", ""))
+        assertEquals(2, TaskText.SECONDARY_MAX_LINES)
     }
 
     @Test
